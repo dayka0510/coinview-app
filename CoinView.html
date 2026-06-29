@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="tk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CoinView — Watch & Earn</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root{
+  --bg:#0a0a0a;--bg1:#111;--bg2:#1a1a1a;--card:#1c1c1e;--ce:#2c2c2e;--ce2:#3a3a3c;
+  --gold:#f0c040;--gold2:#fdd96a;--blue:#2563eb;--blue2:#3b82f6;
+  --teal:#00c9a7;--txt:#fff;--txt1:#ebebf5cc;--txt2:#ebebf599;--txt3:#ebebf54d;
+  --ok:#30d158;--bad:#ff453a;--warn:#ffd60a;
+  --r1:20px;--r2:14px;--r3:10px;--r4:100px;
+  --sh:0 8px 32px rgba(0,0,0,.6);
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+  --nav:60px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;}
+
+/* SCREENS */
+.scr{position:fixed;inset:0;z-index:10;overflow-y:auto;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s cubic-bezier(.4,0,.2,1);}
+.scr.sr{transform:translateX(30px);}
+.scr.su{transform:translateY(20px);}
+.scr.active{opacity:1;pointer-events:auto;transform:none;}
+
+/* AUTH */
+.auth-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px calc(40px + var(--sb));background:var(--bg);}
+.auth-logo{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:32px;}
+.logo-ic{width:80px;height:80px;border-radius:22px;background:linear-gradient(135deg,var(--gold2),var(--gold),#e07830);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(240,192,64,.3);}
+.logo-ic svg{width:40px;height:40px;}
+.auth-logo h1{font-size:28px;font-weight:900;letter-spacing:-.5px;}
+.auth-logo p{font-size:12px;color:var(--txt2);font-weight:600;letter-spacing:.8px;}
+.auth-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);padding:24px 20px;}
+.auth-card h2{font-size:20px;font-weight:800;margin-bottom:4px;}
+.auth-card .sub{font-size:12.5px;color:var(--txt2);margin-bottom:20px;line-height:1.5;}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:11.5px;font-weight:700;color:var(--txt2);margin-bottom:6px;letter-spacing:.3px;text-transform:uppercase;}
+.fg input{width:100%;background:var(--bg2);border:1px solid var(--ce);color:var(--txt);padding:13px 14px;border-radius:var(--r3);font-size:14px;font-family:inherit;outline:none;transition:.15s;}
+.fg input:focus{border-color:var(--blue2);}
+.fg input::placeholder{color:var(--txt3);}
+.fhint{font-size:11px;margin-top:4px;}
+.fhint.err{color:var(--bad);}
+.btn-p{width:100%;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:700;font-size:15px;padding:15px;border-radius:var(--r2);transition:.15s;font-family:inherit;}
+.btn-p:active{opacity:.8;transform:scale(.98);}
+.btn-p:disabled{opacity:.4;cursor:not-allowed;}
+.btn-g{width:100%;border:1px solid var(--ce2);background:transparent;color:var(--txt1);font-weight:600;font-size:14px;padding:13px;border-radius:var(--r2);cursor:pointer;margin-top:10px;font-family:inherit;}
+.auth-sw{text-align:center;margin-top:16px;font-size:13px;color:var(--txt2);}
+.auth-sw a{color:var(--blue2);font-weight:700;cursor:pointer;}
+.code-wrap{display:flex;gap:8px;justify-content:center;margin:16px 0;}
+.code-wrap input{width:44px;height:52px;text-align:center;font-size:20px;font-weight:800;background:var(--bg2);border:1.5px solid var(--ce);border-radius:var(--r3);color:var(--txt);outline:none;font-family:inherit;transition:.15s;}
+.code-wrap input:focus{border-color:var(--blue2);}
+.code-wrap input.filled{border-color:var(--teal);}
+.resend-r{text-align:center;font-size:12px;color:var(--txt2);margin-top:10px;}
+.tbadge{display:inline-block;background:rgba(255,255,255,.08);color:var(--txt2);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;margin-left:4px;}
+
+/* APP SHELL */
+#appScr{padding-bottom:calc(var(--nav) + var(--sb));}
+
+/* TOP BAR */
+.topbar{
+  padding:calc(10px + var(--st)) 16px 10px;
+  background:var(--bg);
+  position:sticky;top:0;z-index:40;
+}
+.tb-stats{
+  display:flex;align-items:center;gap:0;
+  background:var(--card);border-radius:var(--r4);
+  padding:10px 16px;
+  border:1px solid var(--ce);
+}
+.tb-stat{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;position:relative;}
+.tb-stat:not(:last-child)::after{content:"";position:absolute;right:0;width:1px;height:16px;background:var(--ce2);}
+.tb-stat .ico{font-size:15px;}
+.tb-stat .val{font-size:13px;font-weight:700;}
+.tb-stat .lbl{font-size:10px;color:var(--txt2);font-weight:600;}
+
+/* HERO */
+.hero-section{padding:20px 16px 0;}
+.balance-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.balance-main{font-size:42px;font-weight:900;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;}
+.balance-main .cents{font-size:24px;color:var(--txt2);}
+.balance-sub{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.balance-sub-item{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--txt2);}
+.balance-sub-item .v{font-weight:700;color:var(--txt);}
+.action-btns{display:flex;gap:10px;margin-bottom:20px;}
+.act-btn{flex:1;border:none;cursor:pointer;padding:14px;border-radius:var(--r2);font-weight:700;font-size:14px;font-family:inherit;transition:.15s;}
+.act-btn:active{opacity:.8;transform:scale(.97);}
+.act-btn.primary{background:var(--blue);color:#fff;}
+.act-btn.secondary{background:var(--card);color:var(--txt);border:1px solid var(--ce);}
+
+/* WEEKLY CONTEST BANNER */
+.contest-banner{
+  margin:0 16px 16px;border-radius:var(--r1);
+  overflow:hidden;position:relative;
+  background:linear-gradient(135deg,#1a2a1a,#0d1f0d);
+  border:1px solid rgba(48,209,88,.2);
+  padding:16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.contest-banner::before{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='400' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='400' height='100' fill='%23061a06'/%3E%3C/svg%3E") center/cover;opacity:.4;}
+.cb-left{position:relative;z-index:1;}
+.cb-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(240,192,64,.15);color:var(--gold);font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;letter-spacing:.5px;margin-bottom:6px;}
+.cb-title{font-size:17px;font-weight:800;}
+.cb-sub{font-size:12px;color:var(--txt2);margin-top:2px;}
+.cb-right{position:relative;z-index:1;text-align:right;}
+.cb-prize{font-size:24px;font-weight:900;color:var(--gold);}
+.cb-prize-lbl{font-size:10px;color:var(--txt2);font-weight:700;letter-spacing:.5px;}
+.trophy-ic{font-size:28px;}
+
+/* VIEWING ADS CARD */
+.viewing-card{
+  margin:0 16px 16px;
+  background:var(--card);border:1px solid var(--ce);
+  border-radius:var(--r1);padding:20px;text-align:center;
+}
+.vc-title{font-size:16px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.vc-sub{font-size:12.5px;color:var(--txt2);margin-bottom:18px;}
+.start-btn{
+  width:100%;border:none;cursor:pointer;
+  background:var(--blue);color:#fff;
+  font-weight:700;font-size:15px;padding:15px;
+  border-radius:var(--r2);font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:.15s;margin-bottom:12px;
+}
+.start-btn:active{opacity:.8;transform:scale(.97);}
+.start-btn:disabled{opacity:.4;cursor:not-allowed;}
+.start-btn svg{width:20px;height:20px;}
+.vc-meta{font-size:12px;color:var(--txt2);}
+.vc-meta b{color:var(--txt);}
+
+/* INCOME STATS */
+.income-sec{padding:0 16px 16px;}
+.sec-title{font-size:12px;font-weight:800;color:var(--txt2);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px;}
+.income-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.income-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r2);padding:14px;}
+.income-card .lbl{font-size:12px;color:var(--txt2);margin-bottom:4px;}
+.income-card .val{font-size:20px;font-weight:800;}
+
+/* BOTTOM NAV */
+.bnav{
+  position:fixed;left:0;right:0;bottom:0;
+  background:rgba(10,10,10,.95);backdrop-filter:blur(20px);
+  border-top:1px solid var(--ce);
+  display:flex;padding:8px 10px calc(8px + var(--sb));
+  z-index:50;max-width:600px;margin:0 auto;
+}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--txt2);cursor:pointer;padding:6px 0;font-family:inherit;transition:color .2s;}
+.nb svg{width:22px;height:22px;}
+.nb span{font-size:9.5px;font-weight:700;}
+.nb.active{color:var(--blue2);}
+
+/* CONTEST SCREEN */
+#contestScr{background:var(--bg);}
+.page-header{padding:calc(14px + var(--st)) 16px 14px;position:sticky;top:0;z-index:40;background:var(--bg);}
+.pg-tabs{display:flex;gap:0;background:var(--card);border-radius:var(--r2);padding:4px;margin-bottom:0;}
+.pg-tab{flex:1;border:none;background:transparent;color:var(--txt2);font-weight:700;font-size:13.5px;padding:9px;border-radius:10px;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;justify-content:center;gap:5px;}
+.pg-tab.active{background:var(--ce);color:var(--txt);}
+.contest-body{padding:0 16px 20px;}
+.prize-card{background:linear-gradient(135deg,#1a1600,#0d1000);border:1px solid rgba(240,192,64,.3);border-radius:var(--r1);padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.prize-amount{font-size:32px;font-weight:900;color:var(--gold);}
+.prize-lbl{font-size:11px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.prize-right{text-align:right;}
+.prize-right .top{font-size:12px;color:var(--txt2);}
+.prize-right .bottom{font-size:13px;font-weight:700;color:var(--gold2);}
+.podium-wrap{display:flex;align-items:flex-end;justify-content:center;gap:12px;margin:20px 0;}
+.podium-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.pod-av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;position:relative;}
+.pod-av.first{width:64px;height:64px;font-size:22px;border:2px solid var(--gold);}
+.pod-av.second{width:54px;height:54px;font-size:18px;border:2px solid #b4bed4;}
+.pod-av.third{width:54px;height:54px;font-size:18px;border:2px solid #c87840;}
+.pod-crown{position:absolute;top:-14px;font-size:18px;}
+.pod-name{font-size:11.5px;font-weight:700;text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pod-earn{font-size:13px;font-weight:800;color:var(--ok);}
+.pod-stars{font-size:10.5px;color:var(--txt2);}
+.pod-base{background:var(--card);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;color:var(--txt2);font-size:24px;font-weight:900;}
+.pod-base.b1{width:80px;height:70px;}
+.pod-base.b2{width:70px;height:50px;}
+.pod-base.b3{width:70px;height:40px;}
+.winners-list{display:flex;flex-direction:column;gap:8px;}
+.winner-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--ce);border-radius:var(--r2);padding:12px;}
+.winner-rank{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;}
+.winner-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;}
+.winner-info{flex:1;}
+.winner-info .n{font-size:13.5px;font-weight:700;}
+.winner-info .s{font-size:11px;color:var(--txt2);margin-top:1px;}
+.winner-earn{font-size:14px;font-weight:800;color:var(--ok);}
+.not-ranked{background:var(--card);border:1px solid var(--ce);border-radius:var(--r2);padding:14px;text-align:center;font-size:13px;color:var(--txt2);margin-top:12px;}
+.not-ranked b{color:var(--txt);display:block;margin-bottom:3px;}
+
+/* AFFILIATES SCREEN */
+#affScr{background:var(--bg);}
+.aff-body{padding:0 16px 20px;}
+.aff-hero{margin-bottom:16px;}
+.aff-title{font-size:22px;font-weight:900;margin-bottom:8px;}
+.aff-desc{font-size:13.5px;color:var(--txt2);line-height:1.6;margin-bottom:16px;}
+.aff-desc b{color:var(--txt);}
+.aff-link-row{display:flex;gap:10px;margin-bottom:16px;}
+.aff-copy-btn{flex:1;border:none;cursor:pointer;background:var(--card);border:1px solid var(--ce);color:var(--txt);font-weight:700;font-size:13.5px;padding:13px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;}
+.aff-share-btn{width:48px;height:48px;border-radius:var(--r2);border:1px solid var(--ce);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.aff-share-btn svg{width:20px;height:20px;color:var(--txt1);}
+.aff-stats-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);overflow:hidden;margin-bottom:16px;}
+.aff-stat-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--ce);}
+.aff-stat-row:last-child{border-bottom:none;}
+.aff-stat-left .t{font-size:13.5px;font-weight:700;}
+.aff-stat-left .s{font-size:11.5px;color:var(--txt2);margin-top:2px;}
+.aff-stat-val{font-size:15px;font-weight:800;}
+.aff-stat-val.ok{color:var(--ok);}
+.aff-earn-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);padding:16px;}
+.aff-earn-title{font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.aff-earn-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--ce);}
+.aff-earn-row:last-child{border-bottom:none;}
+.aff-earn-row .t{font-size:13.5px;font-weight:700;}
+.aff-earn-row .v{font-size:14px;font-weight:800;color:var(--ok);}
+
+/* TASKS SCREEN */
+#tasksScr{background:var(--bg);}
+.tasks-body{padding:0 16px 20px;}
+.promo-box{background:var(--card);border:1px solid var(--ce);border-radius:var(--r2);padding:4px;display:flex;gap:6px;margin-bottom:16px;}
+.promo-input{flex:1;background:transparent;border:none;color:var(--txt);font-size:13.5px;padding:10px 12px;outline:none;font-family:inherit;}
+.promo-input::placeholder{color:var(--txt3);}
+.promo-apply{border:none;background:var(--bg2);color:var(--txt2);font-size:12px;font-weight:700;padding:10px 14px;border-radius:var(--r3);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.task-filter{display:flex;background:var(--card);border-radius:var(--r2);padding:4px;margin-bottom:16px;}
+.tf-btn{flex:1;border:none;background:transparent;color:var(--txt2);font-weight:700;font-size:13px;padding:9px;border-radius:10px;cursor:pointer;font-family:inherit;transition:.15s;}
+.tf-btn.active{background:#fff;color:#000;}
+.task-group-title{font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;}
+.task-list{display:flex;flex-direction:column;gap:0;background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);overflow:hidden;margin-bottom:16px;}
+.task-item{display:flex;align-items:center;gap:12px;padding:14px 14px;border-bottom:1px solid var(--ce);}
+.task-item:last-child{border-bottom:none;}
+.task-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.task-ic svg,.task-ic img{width:22px;height:22px;}
+.task-body-inner{flex:1;}
+.task-body-inner .t{font-size:13.5px;font-weight:700;}
+.task-body-inner .s{font-size:12px;color:var(--txt2);margin-top:1px;}
+.task-btn{border:none;cursor:pointer;font-weight:700;font-size:12.5px;padding:8px 16px;border-radius:var(--r4);font-family:inherit;white-space:nowrap;}
+.task-btn.watch{background:var(--blue);color:#fff;}
+.task-btn.claim{background:var(--blue);color:#fff;}
+.task-btn.go{background:var(--card);color:var(--txt);border:1px solid var(--ce2);}
+.task-btn.share{background:var(--card);color:var(--txt);border:1px solid var(--ce2);}
+.task-btn.done{background:rgba(48,209,88,.15);color:var(--ok);}
+.task-btn:active{opacity:.8;}
+
+/* PROFILE/SETTINGS SCREEN */
+#profScr{background:var(--bg);}
+.prof-body{padding:0 16px 20px;}
+.prof-hero-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);padding:20px;display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px;}
+.prof-av{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:#fff;margin-bottom:4px;}
+.prof-name{font-size:18px;font-weight:800;}
+.prof-email{font-size:12px;color:var(--txt2);}
+.prof-stat-row{display:flex;gap:8px;width:100%;margin-top:4px;}
+.prof-stat{flex:1;background:var(--bg2);border-radius:var(--r3);padding:10px;text-align:center;}
+.prof-stat .v{font-size:15px;font-weight:800;}
+.prof-stat .l{font-size:9.5px;color:var(--txt2);margin-top:2px;font-weight:600;}
+.pref-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);overflow:hidden;margin-bottom:12px;}
+.pref-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--ce);cursor:pointer;transition:.1s;}
+.pref-row:last-child{border-bottom:none;}
+.pref-row:active{background:var(--bg2);}
+.pref-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.pref-ic svg{width:18px;height:18px;}
+.pref-info{flex:1;}
+.pref-info .t{font-size:13.5px;font-weight:700;}
+.pref-info .s{font-size:11.5px;color:var(--txt2);margin-top:1px;}
+.pref-arr{color:var(--txt2);}
+.pref-arr svg{width:16px;height:16px;}
+.logout-btn{width:100%;border:none;cursor:pointer;background:rgba(255,69,58,.12);color:var(--bad);font-weight:700;font-size:14px;padding:14px;border-radius:var(--r2);font-family:inherit;border:1px solid rgba(255,69,58,.2);}
+
+/* OVERLAYS */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
+.ov.show{opacity:1;pointer-events:auto;}
+.sheet{width:100%;max-width:600px;background:var(--bg1);border:1px solid var(--ce);border-bottom:none;border-radius:24px 24px 0 0;padding:20px 20px calc(20px + var(--sb));transform:translateY(100%);transition:transform .32s cubic-bezier(.32,.72,0,1);max-height:90vh;overflow-y:auto;position:relative;}
+.ov.show .sheet{transform:translateY(0);}
+.sh-handle{width:36px;height:4px;background:var(--ce2);border-radius:100px;margin:0 auto 14px;}
+.sh-title{font-size:17px;font-weight:800;margin-bottom:4px;}
+.sh-sub{font-size:12.5px;color:var(--txt2);margin-bottom:16px;}
+.x-btn{position:absolute;top:16px;right:16px;width:28px;height:28px;border-radius:50%;background:var(--ce);border:none;color:var(--txt2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
+.sub-btn{width:100%;border:none;cursor:pointer;margin-top:8px;background:var(--blue);color:#fff;font-weight:700;font-size:15px;padding:15px;border-radius:var(--r2);font-family:inherit;}
+.sub-btn:active{opacity:.8;}
+.sub-btn:disabled{opacity:.4;}
+
+/* LANG SHEET */
+.lang-opts{display:flex;flex-direction:column;gap:8px;}
+.lang-opt{display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg2);border:1px solid var(--ce);border-radius:var(--r2);cursor:pointer;transition:.15s;}
+.lang-opt:active{background:var(--ce);}
+.lang-opt.active{border-color:var(--blue2);background:rgba(59,130,246,.1);}
+.lang-opt .flag{font-size:24px;}
+.lang-opt .name{font-size:14px;font-weight:700;flex:1;}
+.lang-opt .check{color:var(--blue2);font-size:18px;display:none;}
+.lang-opt.active .check{display:block;}
+
+/* WITHDRAW SHEET */
+.wd-balance{background:var(--bg2);border-radius:var(--r2);padding:14px;text-align:center;margin-bottom:16px;}
+.wd-balance .lbl{font-size:11px;color:var(--txt2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.wd-balance .val{font-size:28px;font-weight:900;}
+.form-row{display:flex;gap:10px;}
+.form-row .fg{flex:1;}
+
+/* AD OVERLAY */
+.ad-ov{position:fixed;inset:0;background:#000;z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;}
+.ad-ov.show{display:flex;}
+.ad-frame{width:100%;max-width:480px;aspect-ratio:9/16;max-height:76vh;background:linear-gradient(160deg,#111,#000);border-radius:18px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--ce);}
+.ad-badge{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:100px;}
+.ad-skip{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:800;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.ad-track{width:100%;max-width:480px;height:3px;background:rgba(255,255,255,.1);margin-top:12px;border-radius:100px;overflow:hidden;}
+.ad-fill{height:100%;width:0%;background:var(--blue2);transition:width 1s linear;}
+.ad-status{color:var(--txt2);font-size:12px;margin-top:10px;font-weight:600;}
+
+/* TOAST */
+.toast{position:fixed;left:50%;bottom:calc(var(--nav) + var(--sb) + 12px);transform:translateX(-50%) translateY(16px);background:var(--bg2);border:1px solid var(--ce);color:var(--txt);padding:11px 16px;border-radius:100px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:var(--sh);z-index:500;opacity:0;pointer-events:none;transition:.28s cubic-bezier(.34,1.56,.64,1);max-width:90%;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0;}
+.toast.err .dot{background:var(--bad);}
+
+/* CONFETTI */
+.confetti-piece{position:fixed;pointer-events:none;z-index:600;border-radius:2px;animation:cf 1.3s ease-in forwards;}
+@keyframes cf{0%{opacity:1;transform:translateY(0) rotate(0deg);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
+
+/* NETWORK BUTTONS */
+.net-btn{flex:1;border:1px solid var(--ce);background:transparent;color:var(--txt2);font-size:12px;font-weight:700;padding:9px 6px;border-radius:var(--r3);cursor:pointer;font-family:inherit;transition:.15s;text-align:center;}
+.net-btn.active{background:rgba(37,99,235,.15);border-color:var(--blue2);color:var(--blue2);}
+.net-btn:active{opacity:.8;}
+
+/* ADMIN REQUEST CARDS */
+.req-card{background:var(--card);border:1px solid var(--ce);border-radius:var(--r2);padding:14px;margin-bottom:8px;}
+.req-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.req-card-name{font-size:13.5px;font-weight:800;}
+.req-card-amt{font-size:14px;font-weight:800;color:var(--gold2);}
+.req-card-meta{font-size:11.5px;color:var(--txt2);line-height:1.7;margin-bottom:10px;}
+.req-card-meta b{color:var(--txt1);}
+.req-btns{display:flex;gap:8px;}
+.req-btn{flex:1;border:none;cursor:pointer;padding:9px;border-radius:var(--r3);font-weight:700;font-size:12.5px;font-family:inherit;transition:.15s;}
+.req-btn:active{opacity:.8;}
+.req-btn.paid{background:rgba(48,209,88,.15);color:var(--ok);border:1px solid rgba(48,209,88,.3);}
+.req-btn.unpaid{background:rgba(255,69,58,.12);color:var(--bad);border:1px solid rgba(255,69,58,.3);}
+.req-badge{display:inline-block;font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;margin-left:6px;}
+.req-badge.paid{background:rgba(48,209,88,.15);color:var(--ok);}
+.req-badge.unpaid{background:rgba(255,69,58,.12);color:var(--bad);}
+
+/* REASON MODAL */
+.reason-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:400;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:.2s;}
+.reason-modal.show{opacity:1;pointer-events:auto;}
+.reason-box{background:var(--bg1);border:1px solid var(--ce);border-radius:var(--r1);padding:22px;width:100%;max-width:400px;animation:card-in .25s ease both;}
+@keyframes card-in{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:none;}}
+.reason-box h3{font-size:16px;font-weight:800;margin-bottom:6px;}
+.reason-box p{font-size:12.5px;color:var(--txt2);margin-bottom:14px;}
+.reason-box textarea{width:100%;background:var(--bg2);border:1px solid var(--ce);color:var(--txt);padding:12px;border-radius:var(--r3);font-size:13.5px;font-family:inherit;outline:none;resize:none;height:90px;}
+.reason-box textarea:focus{border-color:var(--blue2);}
+.reason-btns{display:flex;gap:8px;margin-top:10px;}
+.reason-btns button{flex:1;border:none;cursor:pointer;padding:11px;border-radius:var(--r3);font-weight:700;font-size:13px;font-family:inherit;}
+.reason-btns .cancel{background:var(--ce);color:var(--txt2);}
+.reason-btns .send{background:var(--bad);color:#fff;}
+
+/* AVATAR COLORS */
+.av-blue{background:#2563eb;} .av-teal{background:#0d9488;} .av-purple{background:#7c3aed;}
+.av-orange{background:#ea580c;} .av-pink{background:#db2777;} .av-green{background:#16a34a;}
+
+::-webkit-scrollbar{width:0;height:0;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.001ms!important;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="scr su" id="loginScr">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="logo-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M8 22L16 30L32 12" stroke="#1a0e00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h1>CoinView</h1>
+      <p data-i="tagline">REKLAM • GAZANÇ</p>
+    </div>
+    <div class="auth-card">
+      <h2 data-i="loginTitle">Giriş</h2>
+      <p class="sub" data-i="loginSub">E-poçta we açar sözi bilen giriş ediň.</p>
+      <div class="fg"><label data-i="emailLbl">E-POÇTA</label><input type="email" id="lEmail" placeholder="email@mysal.com" autocomplete="email"></div>
+      <div class="fg"><label data-i="passLbl">AÇAR SÖZI</label><input type="password" id="lPass" placeholder="••••••••"><div class="fhint err" id="lErr" style="display:none"></div></div>
+      <button class="btn-p" id="lBtn" data-i="loginBtn">Giriş</button>
+      <div class="auth-sw"><span data-i="noAcc">Hasabyňyz ýokmy?</span><a id="goReg" data-i="createAcc"> Hasap Döret</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ REGISTER ═══ -->
+<div class="scr sr" id="regScr">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="logo-ic"><svg viewBox="0 0 40 40" fill="none"><path d="M8 22L16 30L32 12" stroke="#1a0e00" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h1>CoinView</h1><p data-i="tagline">REKLAM • GAZANÇ</p>
+    </div>
+    <div class="auth-card">
+      <h2 data-i="regTitle">Hasap Döret</h2>
+      <p class="sub" data-i="regSub">E-poçtaňyza tassyklama kody iberiler.</p>
+      <div class="fg"><label data-i="emailLbl">E-POÇTA</label><input type="email" id="rEmail" placeholder="email@mysal.com"></div>
+      <div class="fg"><label data-i="passLbl">AÇAR SÖZI</label><input type="password" id="rPass" placeholder="Iň az 6 nyşan"></div>
+      <div class="fg"><label data-i="passConf">GAÝTALA</label><input type="password" id="rPass2" placeholder="Açar sözüni gaýtala"><div class="fhint err" id="rErr" style="display:none"></div></div>
+      <button class="btn-p" id="rBtn" data-i="sendCode">Kod ibermek</button>
+      <div class="auth-sw"><span data-i="haveAcc">Hasabyňyz barmy?</span><a id="goLogin" data-i="loginLink"> Giriş</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VERIFY ═══ -->
+<div class="scr sr" id="verScr">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="logo-ic" style="background:linear-gradient(135deg,var(--teal),#0d9488);">
+        <svg viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="22" rx="4" stroke="#fff" stroke-width="2"/><path d="M6 16L20 26L34 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <h1 data-i="verTitle">E-poçta barla</h1>
+      <p id="verEmail" style="font-size:12px;color:var(--txt2);"></p>
+    </div>
+    <div class="auth-card">
+      <h2 data-i="verCard">6 sanly kod</h2>
+      <p class="sub" data-i="verSub">E-poçtaňyza iberilen 6 sanly kody giriziň.</p>
+      <div class="code-wrap" id="codeWrap">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+      </div>
+      <div class="fhint err" id="vErr" style="display:none;text-align:center;margin-bottom:8px;"></div>
+      <button class="btn-p" id="vBtn" data-i="verBtn">Tassykla</button>
+      <div class="resend-r"><span data-i="resendTxt">Kod gelmedi mi?</span><span id="rSendBtn" style="display:none"> <a style="color:var(--blue2);font-weight:700;cursor:pointer;" data-i="resendLnk">Täzeden iber</a></span><span id="rTimer" class="tbadge">10:00</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADMIN 2FA ═══ -->
+<div class="scr sr" id="a2faScr">
+  <div class="auth-wrap">
+    <div class="auth-logo">
+      <div class="logo-ic" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);">
+        <svg viewBox="0 0 40 40" fill="none"><path d="M20 4L32 10V22C32 30 26 36 20 38C14 36 8 30 8 22V10Z" stroke="#fff" stroke-width="2"/><path d="M15 20L18 23L25 16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <h1>Admin 2FA</h1>
+      <p style="font-size:12px;color:var(--txt2);">daykajannn@gmail.com</p>
+    </div>
+    <div class="auth-card">
+      <h2 data-i="a2faCard">Tassyklama kody</h2>
+      <p class="sub" data-i="a2faSub">Admin e-poçtasyna 6 sanly kod iberildi.</p>
+      <div class="code-wrap" id="adminCodeWrap">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+        <input type="number" min="0" max="9"><input type="number" min="0" max="9">
+      </div>
+      <div class="fhint err" id="a2fErr" style="display:none;text-align:center;margin-bottom:8px;"></div>
+      <button class="btn-p" id="a2fBtn" data-i="verBtn">Tassykla</button>
+      <button class="btn-g" id="a2fBack" data-i="backBtn">Yzyna</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div class="scr su" id="appScr">
+  <!-- TOP STATS BAR -->
+  <div class="topbar">
+    <div class="tb-stats">
+      <div class="tb-stat"><span class="ico">⭐</span><div><div class="val" id="tbStars">0</div><div class="lbl">STARS</div></div></div>
+      <div class="tb-stat"><span class="ico">⚡</span><div><div class="val" id="tbPow">0</div><div class="lbl">POW</div></div></div>
+      <div class="tb-stat"><span class="ico" style="color:var(--teal);">●</span><div><div class="val" id="tbTmt">0.000</div><div class="lbl">TMT</div></div></div>
+      <div class="tb-stat" id="langBtn" style="cursor:pointer;">
+        <span class="ico">🌐</span>
+        <div><div class="val" id="tbLang">TM</div><div class="lbl">DİL</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO BALANCE -->
+  <div class="hero-section">
+    <div class="balance-row">
+      <div>
+        <div style="font-size:11px;color:var(--txt2);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;" data-i="balLbl">BAKİYE</div>
+        <div class="balance-main">$<span id="heroNum">0</span><span class="cents">.<span id="heroCents">000000</span></span></div>
+      </div>
+      <button class="av-btn" id="avBtn" style="width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;font-size:15px;font-weight:800;color:#fff;">?</button>
+    </div>
+    <div class="balance-sub">
+      <div class="balance-sub-item"><span>⚡</span><span class="v" id="subPow">0</span> <span>POW</span></div>
+      <div class="balance-sub-item"><span>⭐</span><span class="v" id="subStars">0</span> <span>STAR</span></div>
+    </div>
+    <div class="action-btns">
+      <button class="act-btn primary" id="wdBtn" data-i="withdrawBtn">WITHDRAW</button>
+      <button class="act-btn secondary" id="swapBtn" data-i="swapBtn">SWAP</button>
+    </div>
+  </div>
+
+  <!-- WEEKLY CONTEST BANNER -->
+  <div class="contest-banner" id="contestBanner" style="cursor:pointer;">
+    <div class="cb-left">
+      <div class="cb-badge">🏅 <span data-i="weeklyContest">WEEKLY CONTEST</span></div>
+      <div class="cb-title" data-i="topEarners">Top Earners</div>
+      <div class="cb-sub" data-i="takePrize">take the prize</div>
+    </div>
+    <div class="cb-right">
+      <div class="trophy-ic">🏆</div>
+      <div class="cb-prize">$10</div>
+      <div class="cb-prize-lbl">PRIZE POOL</div>
+    </div>
+  </div>
+
+  <!-- VIEWING ADS CARD -->
+  <div class="viewing-card">
+    <div class="vc-title" data-i="viewingAds">VIEWING ADS</div>
+    <div class="vc-sub" data-i="viewingAdsSub">Get paid for watching short Ads on Telegram.</div>
+    <button class="start-btn" id="watchBtn">
+      <svg viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7-11-7z"/></svg>
+      <span data-i="startEarning">Start Earning</span>
+    </button>
+    <div class="vc-meta" id="vcMeta"><b id="adsAvail">0</b> <span data-i="adsAvailable">ads available</span> · <b id="adsTodayCount">0</b>/<b id="adsTodayMax">20</b> <span data-i="today">today</span></div>
+  </div>
+
+  <!-- INCOME STATS -->
+  <div class="income-sec">
+    <div class="sec-title" data-i="incomeStats">INCOME STATISTICS</div>
+    <div class="income-grid">
+      <div class="income-card"><div class="lbl" data-i="today">Today</div><div class="val" id="incToday">$0</div></div>
+      <div class="income-card"><div class="lbl" data-i="weekly">Weekly</div><div class="val" id="incWeekly">$0</div></div>
+      <div class="income-card"><div class="lbl" data-i="monthly">Monthly</div><div class="val" id="incMonthly">$0</div></div>
+      <div class="income-card"><div class="lbl" data-i="allTime">All-Time</div><div class="val" id="incAllTime">$0</div></div>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bnav">
+    <button class="nb active" id="nb0">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span data-i="nbHome">Home</span>
+    </button>
+    <button class="nb" id="nb1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 000 5H6"/><path d="M18 9h1.5a2.5 2.5 0 010 5H18"/><path d="M8 9h8"/><path d="M8 15h8"/><path d="M9 6l3-3 3 3"/><path d="M9 18l3 3 3-3"/></svg>
+      <span data-i="nbContest">Contest</span>
+    </button>
+    <button class="nb" id="nb2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      <span data-i="nbAff">Affiliates</span>
+    </button>
+    <button class="nb" id="nb3">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span data-i="nbTasks">Tasks</span>
+    </button>
+    <button class="nb" id="nb4" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      <span>Admin</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══ CONTEST SCREEN ═══ -->
+<div class="scr sr" id="contestScr">
+  <div class="page-header">
+    <div class="pg-tabs">
+      <button class="pg-tab active" id="thisWeekTab" data-i="thisWeek">⭐ This Week</button>
+      <button class="pg-tab" id="lastWeekTab" data-i="lastWeek">📅 Last Week</button>
+    </div>
+  </div>
+  <div class="contest-body" id="contestBody"></div>
+</div>
+
+<!-- ═══ AFFILIATES SCREEN ═══ -->
+<div class="scr sr" id="affScr">
+  <div class="page-header">
+    <div style="font-size:11px;color:var(--txt2);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px;" data-i="affProgram">AFFILIATES PROGRAM</div>
+  </div>
+  <div class="aff-body">
+    <div class="aff-hero">
+      <div class="aff-title" data-i="affTitle">Affiliates Program</div>
+      <div class="aff-desc" id="affDesc"></div>
+      <div class="aff-link-row">
+        <button class="aff-copy-btn" id="affCopy">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          <span data-i="copyLink">COPY</span>
+        </button>
+        <button class="aff-share-btn" id="affShare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="aff-stats-card">
+      <div class="aff-stat-row">
+        <div class="aff-stat-left"><div class="t" data-i="lvl1Ref">Level 1 Referrals</div><div class="s" data-i="lvl1Desc">Get 25% of your friends POW</div></div>
+        <div class="aff-stat-val" id="affLvl1">0</div>
+      </div>
+      <div class="aff-stat-row">
+        <div class="aff-stat-left"><div class="t" data-i="lvl2Ref">Level 2 Referrals</div><div class="s" data-i="lvl2Desc">Get 4% from their friends</div></div>
+        <div class="aff-stat-val" id="affLvl2">0</div>
+      </div>
+      <div class="aff-stat-row">
+        <div class="aff-stat-left"><div class="t" data-i="bonus">Bonus</div><div class="s" data-i="bonusDesc">When your friend watches 1 ad</div></div>
+        <div class="aff-stat-val ok" id="affBonus">$0.015</div>
+      </div>
+    </div>
+    <div class="aff-earn-card">
+      <div class="aff-earn-title" data-i="totalAffEarn">TOTAL AFFILIATE EARNINGS</div>
+      <div class="aff-earn-row"><div class="t" data-i="usdEarned">USD Earned</div><div class="v" id="affUsd">$0.000</div></div>
+      <div class="aff-earn-row"><div class="t" data-i="powEarned">POW Earned</div><div class="v" id="affPow">0 POW</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TASKS SCREEN ═══ -->
+<div class="scr sr" id="tasksScr">
+  <div class="page-header">
+    <div style="font-size:11px;color:var(--txt2);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;" data-i="tasksTitle">TASKS</div>
+    <div class="promo-box">
+      <input class="promo-input" id="promoInput" placeholder="Enter promo code" data-i-ph="promoPlaceholder">
+      <button class="promo-apply" id="promoApply" data-i="promoApply">✓ APPLY</button>
+    </div>
+    <div class="task-filter">
+      <button class="tf-btn active" data-flt="all" data-i="all">All</button>
+      <button class="tf-btn" data-flt="daily" data-i="daily">Daily</button>
+      <button class="tf-btn" data-flt="partner" data-i="partner">Partner</button>
+    </div>
+  </div>
+  <div class="tasks-body">
+    <div id="taskEarnSection">
+      <div class="task-group-title" data-i="earnWithAds">EARN WITH ADS</div>
+      <div class="task-list" id="earnTaskList"></div>
+    </div>
+    <div id="taskDailySection" style="margin-top:16px;">
+      <div class="task-group-title" data-i="dailyTasks">DAILY TASKS</div>
+      <div class="task-list" id="dailyTaskList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE SCREEN ═══ -->
+<div class="scr sr" id="profScr">
+  <div class="page-header">
+    <div style="font-size:18px;font-weight:800;" data-i="profTitle">Profile</div>
+  </div>
+  <div class="prof-body">
+    <div class="prof-hero-card">
+      <div class="prof-av av-blue" id="profAv">?</div>
+      <div class="prof-name" id="profName">—</div>
+      <div class="prof-email" id="profEmail">—</div>
+      <div class="prof-stat-row">
+        <div class="prof-stat"><div class="v" id="psBal">$0</div><div class="l">Balance</div></div>
+        <div class="prof-stat"><div class="v" id="psAds">0</div><div class="l" data-i="totalAds">Ads</div></div>
+        <div class="prof-stat"><div class="v" id="psStr">0</div><div class="l" data-i="streak">Streak</div></div>
+      </div>
+    </div>
+    <div class="pref-card">
+      <div class="pref-row" id="editNameRow">
+        <div class="pref-ic" style="background:rgba(240,192,64,.15);color:var(--gold);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>
+        </div>
+        <div class="pref-info"><div class="t" data-i="editName">Edit Name</div><div class="s" id="editNameSub">—</div></div>
+        <div class="pref-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="pref-row" id="langPrefRow">
+        <div class="pref-ic" style="background:rgba(59,130,246,.15);color:var(--blue2);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        </div>
+        <div class="pref-info"><div class="t" data-i="changeLang">Language</div><div class="s" id="curLangLbl">—</div></div>
+        <div class="pref-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+      <div class="pref-row" id="nb4ProfRow" style="display:none">
+        <div class="pref-ic" style="background:rgba(124,58,237,.15);color:#7c3aed;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <div class="pref-info"><div class="t">Admin Panel</div><div class="s">Dolandyryjy paneli</div></div>
+        <div class="pref-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn" data-i="logoutBtn">Sign Out</button>
+  </div>
+</div>
+
+<!-- ═══ ADMIN SCREEN ═══ -->
+<div class="scr sr" id="adminScr">
+  <div class="page-header">
+    <div style="font-size:18px;font-weight:800;">⚙ Admin Panel</div>
+  </div>
+  <div style="padding:0 16px 20px;">
+    <div class="sec-title">💰 TMT SAZLAMALARY</div>
+    <div style="background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);padding:16px;margin-bottom:14px;">
+      <div style="display:flex;gap:10px;"><div class="fg" style="flex:1;"><label>Reklam başyna (TMT)</label><input type="number" id="cfgRew" step="0.01"></div><div class="fg" style="flex:1;"><label>Günlük çäk</label><input type="number" id="cfgLim"></div></div>
+      <div style="display:flex;gap:10px;"><div class="fg" style="flex:1;"><label>Reklam wagty (sek)</label><input type="number" id="cfgDur"></div><div class="fg" style="flex:1;"><label>Garaşma (sek)</label><input type="number" id="cfgCd"></div></div>
+      <div style="display:flex;gap:10px;"><div class="fg" style="flex:1;"><label>Iň az çykarma</label><input type="number" id="cfgMin"></div><div class="fg" style="flex:1;"><label>Dost bonus (TMT)</label><input type="number" id="cfgInv"></div></div>
+    </div>
+    <div class="sec-title">🔐 ADMIN ŞİFRE</div>
+    <div style="background:var(--card);border:1px solid var(--ce);border-radius:var(--r1);padding:16px;margin-bottom:14px;">
+      <div class="fg"><label>Täze şifre</label><input type="password" id="cfgNP"></div>
+      <div class="fg"><label>Gaýtala</label><input type="password" id="cfgNP2"><div class="fhint err" id="admPErr" style="display:none;margin-top:4px;"></div></div>
+    </div>
+    <button class="btn-p" id="admSave" style="margin-bottom:14px;">Ýatda sakla ✓</button>
+    <div class="sec-title">📋 PUL ÇYKARMAK TALAPLARY <a id="expReq" style="color:var(--blue2);font-size:11px;cursor:pointer;margin-left:8px;">JSON</a></div>
+    <div id="admReqList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;max-height:250px;overflow-y:auto;"></div>
+    <div class="sec-title">👥 ULANYJYLAR</div>
+    <div id="admUsrList" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;max-height:250px;overflow-y:auto;"></div>
+    <button class="logout-btn" id="resetBtn">⚠ Ähli maglumaty arassala</button>
+    <div style="height:30px;"></div>
+  </div>
+</div>
+
+<!-- WITHDRAW SHEET -->
+<div class="ov" id="wdOv">
+  <div class="sheet">
+    <button class="x-btn" id="wdX">✕</button>
+    <div class="sh-handle"></div>
+    <div class="sh-title" data-i="wTitle">Withdraw</div>
+    <div class="wd-balance">
+      <div class="lbl" data-i="availBal">AVAILABLE BALANCE</div>
+      <div class="val" id="wdBal">$0.000000</div>
+    </div>
+    <!-- Network seçimi -->
+    <div class="fg">
+      <label data-i="wNetwork">NETWORK</label>
+      <div style="display:flex;gap:8px;">
+        <button class="net-btn active" data-net="TRC20">USDT TRC20</button>
+        <button class="net-btn" data-net="ERC20">USDT ERC20</button>
+        <button class="net-btn" data-net="USD">USD</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label data-i="wWallet">WALLET ADDRESS</label>
+      <input type="text" id="wWallet" placeholder="TRC20: T... / ERC20: 0x..." autocomplete="off">
+      <div class="fhint" id="wWalletHint" style="color:var(--txt2);"></div>
+    </div>
+    <div class="fg">
+      <label data-i="wName">FULL NAME</label>
+      <input type="text" id="wName" placeholder="Your full name">
+    </div>
+    <div class="fg">
+      <label data-i="wEmail2">EMAIL (for notification)</label>
+      <input type="email" id="wEmail2" placeholder="your@email.com">
+    </div>
+    <div class="fg">
+      <label data-i="wAmt">AMOUNT (USD)</label>
+      <input type="number" id="wAmt" placeholder="0.00" min="0" step="0.01">
+      <div class="fhint" id="wHint"></div>
+    </div>
+    <button class="sub-btn" id="wdSub" data-i="wSub2">Send Request</button>
+  </div>
+</div>
+
+<!-- LANG SHEET -->
+<div class="ov" id="langOv">
+  <div class="sheet">
+    <button class="x-btn" id="langX">✕</button>
+    <div class="sh-handle"></div>
+    <div class="sh-title" data-i="changeLang">Language</div>
+    <div class="lang-opts">
+      <div class="lang-opt" data-lang="tk"><span class="flag">🇹🇲</span><span class="name">Türkmençe</span><span class="check">✓</span></div>
+      <div class="lang-opt" data-lang="tr"><span class="flag">🇹🇷</span><span class="name">Türkçe</span><span class="check">✓</span></div>
+      <div class="lang-opt" data-lang="en"><span class="flag">🇬🇧</span><span class="name">English</span><span class="check">✓</span></div>
+      <div class="lang-opt" data-lang="ru"><span class="flag">🇷🇺</span><span class="name">Русский</span><span class="check">✓</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAME EDIT SHEET -->
+<div class="ov" id="nameOv">
+  <div class="sheet">
+    <button class="x-btn" id="nameX">✕</button>
+    <div class="sh-handle"></div>
+    <div class="sh-title" data-i="editName">Edit Name</div>
+    <div class="fg"><label data-i="yourName">YOUR NAME</label><input type="text" id="nameInp" maxlength="32"></div>
+    <button class="sub-btn" id="nameSave" data-i="saveName">Save</button>
+  </div>
+</div>
+
+<!-- AD OVERLAY -->
+<div class="ad-ov" id="adOv">
+  <div class="ad-frame">
+    <span class="ad-badge" data-i="adBadge">AD</span>
+    <span class="ad-skip" id="adSkip">5</span>
+    <svg style="width:70px;height:70px;opacity:.3;" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M9 9l6 3-6 3V9z" fill="#fff" stroke="none"/></svg>
+  </div>
+  <div class="ad-track"><div class="ad-fill" id="adFill"></div></div>
+  <div class="ad-status" id="adStat">Ad playing…</div>
+</div>
+
+<!-- REASON MODAL -->
+<div class="reason-modal" id="reasonModal">
+  <div class="reason-box">
+    <h3 id="reasonTitle">Rejection Reason</h3>
+    <p id="reasonDesc">Please explain why this request was rejected. The user will be notified via email.</p>
+    <textarea id="reasonText" placeholder="e.g. Wallet address is invalid, please re-submit with correct address..."></textarea>
+    <div class="reason-btns">
+      <button class="cancel" id="reasonCancel">Cancel</button>
+      <button class="send" id="reasonSend">Send & Reject</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="dot"></span><span id="toastTxt"></span></div>
+
+<script>
+(function(){"use strict";
+
+/* ══ EMAILJS ══ */
+const EJS={svc:"service_8jw7kob",tpl:"template_7wngsoa",pk:"82PnuDJ81Zem4UeOq"};
+emailjs.init(EJS.pk);
+
+/* ══ CONSTANTS ══ */
+const ADMIN_EMAIL="daykajannn@gmail.com";
+const K={PASS:"tp_pw",USERS:"tp_u3",CFG:"tp_cfg3",SES:"tp_ses3",OTP:"tp_otp3"};
+const AV_COLORS=["av-blue","av-teal","av-purple","av-orange","av-pink","av-green"];
+const DFLT_CFG={rewardPerAd:.5,dailyLimit:20,adDuration:5,cooldown:0,minWithdraw:10,inviteBonus:2,admobAppId:"ca-app-pub-7357663694282500~9184823084",admobUnitId:"ca-app-pub-7357663694282500/6387003429"};
+
+/* ══ STORAGE ══ */
+const ls={g(k,fb){try{const r=localStorage.getItem(k);return r?JSON.parse(r):fb;}catch{return fb;}},s(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}},d(k){try{localStorage.removeItem(k);}catch{}}};
+function hp(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193);}return(h>>>0).toString(16);}
+
+/* ══ CFG ══ */
+let CFG=ls.g(K.CFG,DFLT_CFG);
+function saveCFG(){ls.s(K.CFG,CFG);}
+
+/* ══ USERS ══ */
+function getUsers(){return ls.g(K.USERS,{});}
+function saveUsers(u){ls.s(K.USERS,u);}
+function newUser(email){return{email,name:"",balance:0,totalAds:0,todayCount:0,todayDate:new Date().toDateString(),streak:0,lastActiveDate:null,lastAdAt:0,history:[],withdrawReqs:[],mP:{m1:0,m2:0,m3:0},mDate:new Date().toDateString(),avColor:AV_COLORS[Math.floor(Math.random()*AV_COLORS.length)],stars:0,pow:0,checkedInToday:false,checkinDate:"",weeklyEarnings:0,monthlyEarnings:0,allTimeEarnings:0,todayEarnings:0,referrals:0,referralEarnings:0};}
+
+/* ══ SESSION ══ */
+let CU=null;
+function loadSes(){const s=ls.g(K.SES,null);if(s?.email){const u=getUsers();if(u[s.email]){CU=s.email;return true;}}return false;}
+function saveSes(e){ls.s(K.SES,{email:e});}
+function clearSes(){ls.d(K.SES);CU=null;}
+
+/* ══ OTP ══ */
+let pendOtp=null,adminOtp=null;
+function genCode(){return String(Math.floor(100000+Math.random()*900000));}
+function sendOtp(email,purpose){
+  const code=genCode(),exp=Date.now()+600000;
+  if(purpose==="admin")adminOtp={code,exp};
+  else{pendOtp={code,exp,email,purpose};ls.s(K.OTP,pendOtp);}
+  return emailjs.send(EJS.svc,EJS.tpl,{to_email:email,passcode:code});
+}
+function verOtp(input,purpose){
+  if(purpose==="admin"){if(!adminOtp||Date.now()>adminOtp.exp)return false;return adminOtp.code===input;}
+  const o=pendOtp||ls.g(K.OTP,null);
+  if(!o||o.purpose!==purpose||Date.now()>o.exp)return false;
+  return o.code===input;
+}
+
+/* ══ I18N ══ */
+const L={
+tk:{tagline:"REKLAM • GAZANÇ",loginTitle:"Giriş",loginSub:"E-poçta we açar sözi bilen giriş ediň.",loginBtn:"Giriş",noAcc:"Hasabyňyz ýokmy?",createAcc:" Hasap Döret",regTitle:"Hasap Döret",regSub:"E-poçtaňyza tassyklama kody iberiler.",sendCode:"Kod ibermek",haveAcc:"Hasabyňyz barmy?",loginLink:" Giriş",emailLbl:"E-POÇTA",passLbl:"AÇAR SÖZI",passConf:"GAÝTALA",verTitle:"E-poçta barla",verCard:"6 sanly kod",verSub:"E-poçtaňyza iberilen 6 sanly kody giriziň.",verBtn:"Tassykla",resendTxt:"Kod gelmedi mi?",resendLnk:"Täzeden iber",a2faCard:"Tassyklama kody",a2faSub:"Admin e-poçtasyna 6 sanly kod iberildi.",backBtn:"Yzyna",balLbl:"BAKİYE",withdrawBtn:"ÇYKARMAK",swapBtn:"ÇALYŞMAK",weeklyContest:"HEPDELIK BÄSLEŞIK",topEarners:"Iň köp gazananlar",takePrize:"baýrak al",viewingAds:"REKLAM GÖRMEK",viewingAdsSub:"Telegram-da gysga reklamlary görüp pul gazan.",startEarning:"Gazanmaga başla",adsAvailable:"reklam bar",today:"şu gün",incomeStats:"GAZANÇ STATISTIKASY",weekly:"Hepdelik",monthly:"Aýlyk",allTime:"Ähli wagt",nbHome:"Baş sahypa",nbContest:"Bäsleşik",nbAff:"Dostlar",nbTasks:"Borçlar",thisWeek:"Bu Hepde",lastWeek:"Geçen Hepde",affProgram:"AFFILIAT PROGRAMMA",affTitle:"Affiliat Programma",affDesc:"Biz 1-nji derejeli referrallaryň girdejisinden <b>25%</b> we 2-nji derejeli referrallaryň girdejisinden <b>4%</b> töleýäris.",copyLink:"GÖÇÜR",lvl1Ref:"1-nji dereje referrallar",lvl1Desc:"Dostlaryňyzyň POW'ünden 25% alyň",lvl2Ref:"2-nji dereje referrallar",lvl2Desc:"Olaryň dostlaryndan 4% alyň",bonus:"Bonus",bonusDesc:"Dostuňyz 1 reklam görende",totalAffEarn:"JEMI AFİLİAT GAZANCY",usdEarned:"USD Gazanyldy",powEarned:"POW Gazanyldy",tasksTitle:"BORÇLAR",promoPlaceholder:"Promo kody giriziň",promoApply:"ULAN",all:"Hemmesi",daily:"Günlük",partner:"Hyzmatdaş",earnWithAds:"REKLAM BILEN GAZAN",dailyTasks:"GÜNLÜK BORÇLAR",profTitle:"Profil",editName:"Ady üýtget",changeLang:"Dil",totalAds:"Jemi",streak:"Seri",yourName:"ADYŇYZ",saveName:"Ýatda sakla",logoutBtn:"Çykmak",wTitle:"Pul çykarmak",availBal:"BAR BOLAN SERIŞDE",wName:"ADY FAMİLIÝASY",wPhone:"TELEFON",wCard:"KARTA BELGISI",wAmt:"MÖÇBERI (TMT)",wSub2:"Talap ibermek",adBadge:"REKLAM",adWatch:"Reklam görkezilýär…",adDone:"Sag boluň!",toastEarn:"+{n} TMT hasabyňyza geçirildi!",toastLimit:"Şu günki çäge ýetdiňiz",toastCd:"Birazdan ýene synanyşyň",toastWdOk:"Talabyňyz kabul edildi",toastWdErr:"Maglumatlary dolduryň",toastMinW:"Iň az {n} TMT",toastInsuff:"Ýeterlik serişde ýok",toastCopy:"Göçürildi!",toastSaved:"Ýatda saklandy ✓",toastCheckin:"Günlük giriş bonus alyndy! +{n} TMT",toastPromo:"Promo kod tapylmady",errEmail:"Dogry e-poçta giriziň",errPassShort:"Açar sözi iň az 6 nyşan",errPassMatch:"Açar sözler gabat gelmeýär",errEmailExists:"Bu e-poçta eýýäm hasaba alnan",errWrongPass:"E-poçta ýa-da açar sözi nädogry",errCode:"Kod nädogry ýa-da möhleti geçen",sending:"Iberilýär…",codeSent:"Kod iberildi!",minHint:"Iň az: {n} TMT",notRanked:"Bu hepde heniz reýtingde ýok",notRankedSub:"Ýyldyz gazanmak üçin reklam göriň",prevWinners:"ÖŇKI ÝEŇIJILER",noParticipants:"Heniz gatnaşyjy ýok",noParticipantsSub:"Ýyldyz gazanmak we birinji orny eýelemek üçin reklam görüň!"},
+tr:{tagline:"REKLAM • KAZANÇ",loginTitle:"Giriş",loginSub:"E-posta ve şifre ile giriş yapın.",loginBtn:"Giriş",noAcc:"Hesabınız yok mu?",createAcc:" Hesap Oluştur",regTitle:"Hesap Oluştur",regSub:"E-postanıza doğrulama kodu gönderilecek.",sendCode:"Kod Gönder",haveAcc:"Hesabınız var mı?",loginLink:" Giriş",emailLbl:"E-POSTA",passLbl:"ŞİFRE",passConf:"TEKRARLA",verTitle:"E-postayı Doğrula",verCard:"6 haneli kod",verSub:"E-postanıza gönderilen 6 haneli kodu girin.",verBtn:"Doğrula",resendTxt:"Kod gelmedi mi?",resendLnk:"Tekrar gönder",a2faCard:"Doğrulama kodu",a2faSub:"Admin e-postasına 6 haneli kod gönderildi.",backBtn:"Geri",balLbl:"BAKİYE",withdrawBtn:"ÇEK",swapBtn:"SWAP",weeklyContest:"HAFTALIK YARIŞ",topEarners:"En çok kazananlar",takePrize:"ödülü al",viewingAds:"REKLAM İZLE",viewingAdsSub:"Telegram'da kısa reklamlar izleyerek kazan.",startEarning:"Kazanmaya Başla",adsAvailable:"reklam mevcut",today:"bugün",incomeStats:"GELİR İSTATİSTİKLERİ",weekly:"Haftalık",monthly:"Aylık",allTime:"Tüm Zamanlar",nbHome:"Ana Sayfa",nbContest:"Yarış",nbAff:"Ortaklar",nbTasks:"Görevler",thisWeek:"Bu Hafta",lastWeek:"Geçen Hafta",affProgram:"ORTAKLIK PROGRAMI",affTitle:"Ortaklar Programı",affDesc:"1. seviye referansların gelirinden <b>%25</b> ve 2. seviye referansların gelirinden <b>%4</b> ödüyoruz.",copyLink:"KOPYALA",lvl1Ref:"Seviye 1 Referanslar",lvl1Desc:"Arkadaşlarınızın POW'undan %25 alın",lvl2Ref:"Seviye 2 Referanslar",lvl2Desc:"Onların arkadaşlarından %4 alın",bonus:"Bonus",bonusDesc:"Arkadaşınız 1 reklam izlediğinde",totalAffEarn:"TOPLAM ORTAKLIK KAZANCI",usdEarned:"USD Kazanıldı",powEarned:"POW Kazanıldı",tasksTitle:"GÖREVLER",promoPlaceholder:"Promosyon kodu girin",promoApply:"UYGULA",all:"Tümü",daily:"Günlük",partner:"Ortak",earnWithAds:"REKLAMLA KAZAN",dailyTasks:"GÜNLÜK GÖREVLER",profTitle:"Profil",editName:"İsim Düzenle",changeLang:"Dil",totalAds:"Toplam",streak:"Seri",yourName:"ADINIZ",saveName:"Kaydet",logoutBtn:"Çıkış",wTitle:"Para Çek",availBal:"MEVCUT BAKİYE",wName:"AD SOYAD",wPhone:"TELEFON",wCard:"KART NUMARASI",wAmt:"TUTAR (TMT)",wSub2:"İstek Gönder",adBadge:"REKLAM",adWatch:"Reklam gösteriliyor…",adDone:"Teşekkürler!",toastEarn:"+{n} TMT hesabınıza yatırıldı!",toastLimit:"Günlük limite ulaştınız",toastCd:"Birazdan tekrar deneyin",toastWdOk:"İsteğiniz alındı",toastWdErr:"Lütfen bilgileri doldurun",toastMinW:"Minimum {n} TMT",toastInsuff:"Yetersiz bakiye",toastCopy:"Kopyalandı!",toastSaved:"Kaydedildi ✓",toastCheckin:"Günlük giriş bonusu alındı! +{n} TMT",toastPromo:"Promosyon kodu bulunamadı",errEmail:"Geçerli e-posta girin",errPassShort:"Şifre en az 6 karakter",errPassMatch:"Şifreler eşleşmiyor",errEmailExists:"Bu e-posta zaten kayıtlı",errWrongPass:"Hatalı e-posta veya şifre",errCode:"Geçersiz veya süresi dolmuş kod",sending:"Gönderiliyor…",codeSent:"Kod gönderildi!",minHint:"Min: {n} TMT",notRanked:"Bu hafta henüz sıralamada değilsiniz",notRankedSub:"Yıldız kazanmak için reklam izleyin",prevWinners:"ÖNCEKİ KAZANANLAR",noParticipants:"Henüz katılımcı yok",noParticipantsSub:"Yıldız kazanmak ve birinci olmak için reklam izleyin!"},
+en:{tagline:"ADS • EARNINGS",loginTitle:"Sign In",loginSub:"Sign in with your email and password.",loginBtn:"Sign In",noAcc:"Don't have an account?",createAcc:" Create one",regTitle:"Create Account",regSub:"A verification code will be sent to your email.",sendCode:"Send Code",haveAcc:"Already have an account?",loginLink:" Sign In",emailLbl:"EMAIL",passLbl:"PASSWORD",passConf:"CONFIRM",verTitle:"Verify Email",verCard:"6-digit code",verSub:"Enter the 6-digit code sent to your email.",verBtn:"Verify",resendTxt:"Didn't receive code?",resendLnk:"Resend",a2faCard:"Verification Code",a2faSub:"A 6-digit code was sent to admin email.",backBtn:"Back",balLbl:"BALANCE",withdrawBtn:"WITHDRAW",swapBtn:"SWAP",weeklyContest:"WEEKLY CONTEST",topEarners:"Top Earners",takePrize:"take the prize",viewingAds:"VIEWING ADS",viewingAdsSub:"Get paid for watching short Ads on Telegram.",startEarning:"Start Earning",adsAvailable:"ads available",today:"today",incomeStats:"INCOME STATISTICS",weekly:"Weekly",monthly:"Monthly",allTime:"All-Time",nbHome:"Home",nbContest:"Contest",nbAff:"Affiliates",nbTasks:"Tasks",thisWeek:"This Week",lastWeek:"Last Week",affProgram:"AFFILIATES PROGRAM",affTitle:"Affiliates Program",affDesc:"We pay out up to <b>25%</b> from the income of referrals of the 1st level and up to <b>4%</b> from the income of referrals of the 2nd level.",copyLink:"COPY",lvl1Ref:"Level 1 Referrals",lvl1Desc:"Get 25% of your friends POW",lvl2Ref:"Level 2 Referrals",lvl2Desc:"Get 4% from their friends",bonus:"Bonus",bonusDesc:"When your friend watches 1 ad",totalAffEarn:"TOTAL AFFILIATE EARNINGS",usdEarned:"USD Earned",powEarned:"POW Earned",tasksTitle:"TASKS",promoPlaceholder:"Enter promo code",promoApply:"APPLY",all:"All",daily:"Daily",partner:"Partner",earnWithAds:"EARN WITH ADS",dailyTasks:"DAILY TASKS",profTitle:"Profile",editName:"Edit Name",changeLang:"Language",totalAds:"Total Ads",streak:"Streak",yourName:"YOUR NAME",saveName:"Save",logoutBtn:"Sign Out",wTitle:"Withdraw",availBal:"AVAILABLE BALANCE",wName:"FULL NAME",wPhone:"PHONE",wCard:"CARD NUMBER",wAmt:"AMOUNT (TMT)",wSub2:"Send Request",adBadge:"AD",adWatch:"Ad playing…",adDone:"Thank you!",toastEarn:"+{n} TMT added to balance!",toastLimit:"Daily ad limit reached",toastCd:"Try again shortly",toastWdOk:"Request received",toastWdErr:"Please fill in all fields",toastMinW:"Minimum {n} TMT",toastInsuff:"Insufficient balance",toastCopy:"Copied!",toastSaved:"Saved ✓",toastCheckin:"Daily check-in bonus! +{n} TMT",toastPromo:"Promo code not found",errEmail:"Enter a valid email",errPassShort:"Password must be at least 6 characters",errPassMatch:"Passwords don't match",errEmailExists:"Email already registered",errWrongPass:"Incorrect email or password",errCode:"Invalid or expired code",sending:"Sending…",codeSent:"Code sent!",minHint:"Min: {n} TMT",notRanked:"Not ranked yet this week",notRankedSub:"Watch ads to earn Stars and enter the contest",prevWinners:"PREVIOUS WINNERS",noParticipants:"No participants yet",noParticipantsSub:"Watch ads to earn Stars and claim the top spot!"},
+ru:{tagline:"РЕКЛАМА • ДОХОД",loginTitle:"Вход",loginSub:"Войдите с помощью email и пароля.",loginBtn:"Войти",noAcc:"Нет аккаунта?",createAcc:" Создать",regTitle:"Создать аккаунт",regSub:"Код подтверждения будет отправлен на email.",sendCode:"Отправить код",haveAcc:"Уже есть аккаунт?",loginLink:" Войти",emailLbl:"EMAIL",passLbl:"ПАРОЛЬ",passConf:"ПОВТОРИТЬ",verTitle:"Подтвердите Email",verCard:"6-значный код",verSub:"Введите 6-значный код, отправленный на ваш email.",verBtn:"Подтвердить",resendTxt:"Не получили код?",resendLnk:"Отправить снова",a2faCard:"Код подтверждения",a2faSub:"6-значный код отправлен на admin email.",backBtn:"Назад",balLbl:"БАЛАНС",withdrawBtn:"ВЫВЕСТИ",swapBtn:"ОБМЕН",weeklyContest:"ЕЖЕНЕДЕЛЬНЫЙ КОНКУРС",topEarners:"Топ заработка",takePrize:"забери приз",viewingAds:"ПРОСМОТР РЕКЛАМЫ",viewingAdsSub:"Зарабатывайте за просмотр коротких реклам в Telegram.",startEarning:"Начать зарабатывать",adsAvailable:"реклам доступно",today:"сегодня",incomeStats:"СТАТИСТИКА ДОХОДА",weekly:"Еженедельно",monthly:"Ежемесячно",allTime:"За всё время",nbHome:"Главная",nbContest:"Конкурс",nbAff:"Рефералы",nbTasks:"Задания",thisWeek:"На этой неделе",lastWeek:"На прошлой неделе",affProgram:"РЕФЕРАЛЬНАЯ ПРОГРАММА",affTitle:"Реферальная программа",affDesc:"Мы выплачиваем до <b>25%</b> от дохода рефералов 1-го уровня и до <b>4%</b> от дохода рефералов 2-го уровня.",copyLink:"КОПИРОВАТЬ",lvl1Ref:"Рефералы 1 уровня",lvl1Desc:"Получайте 25% от POW друзей",lvl2Ref:"Рефералы 2 уровня",lvl2Desc:"Получайте 4% от их друзей",bonus:"Бонус",bonusDesc:"Когда ваш друг смотрит 1 рекламу",totalAffEarn:"ОБЩИЙ РЕФЕРАЛЬНЫЙ ЗАРАБОТОК",usdEarned:"Заработано USD",powEarned:"Заработано POW",tasksTitle:"ЗАДАНИЯ",promoPlaceholder:"Введите промокод",promoApply:"ПРИМЕНИТЬ",all:"Все",daily:"Ежедневно",partner:"Партнёр",earnWithAds:"ЗАРАБОТАЙ С РЕКЛАМОЙ",dailyTasks:"ЕЖЕДНЕВНЫЕ ЗАДАНИЯ",profTitle:"Профиль",editName:"Изменить имя",changeLang:"Язык",totalAds:"Всего реклам",streak:"Серия",yourName:"ВАШЕ ИМЯ",saveName:"Сохранить",logoutBtn:"Выйти",wTitle:"Вывод средств",availBal:"ДОСТУПНЫЙ БАЛАНС",wName:"ИМЯ ФАМИЛИЯ",wPhone:"ТЕЛЕФОН",wCard:"НОМЕР КАРТЫ",wAmt:"СУММА (TMT)",wSub2:"Отправить заявку",adBadge:"РЕКЛАМА",adWatch:"Идёт показ рекламы…",adDone:"Спасибо!",toastEarn:"+{n} TMT зачислено!",toastLimit:"Дневной лимит исчерпан",toastCd:"Повторите позже",toastWdOk:"Заявка принята",toastWdErr:"Заполните все поля",toastMinW:"Минимум {n} TMT",toastInsuff:"Недостаточно средств",toastCopy:"Скопировано!",toastSaved:"Сохранено ✓",toastCheckin:"Ежедневный бонус! +{n} TMT",toastPromo:"Промокод не найден",errEmail:"Введите корректный email",errPassShort:"Пароль должен содержать не менее 6 символов",errPassMatch:"Пароли не совпадают",errEmailExists:"Email уже зарегистрирован",errWrongPass:"Неверный email или пароль",errCode:"Неверный или просроченный код",sending:"Отправка…",codeSent:"Код отправлен!",minHint:"Мин: {n} TMT",notRanked:"Ещё нет в рейтинге этой недели",notRankedSub:"Смотрите рекламу, чтобы заработать Звёзды",prevWinners:"ПРОШЛЫЕ ПОБЕДИТЕЛИ",noParticipants:"Пока нет участников",noParticipantsSub:"Смотрите рекламу, чтобы заработать Звёзды!"}
+};
+let LANG=localStorage.getItem("tp_lang")||"tk";
+function t(k,v){let s=(L[LANG]&&L[LANG][k])||L.en[k]||k;if(v)Object.keys(v).forEach(x=>{s=s.replace("{"+x+"}",v[x]);});return s;}
+const LANG_NAMES={tk:"TM",tr:"TR",en:"EN",ru:"RU"};
+function applyI18n(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll("[data-i]").forEach(el=>{const k=el.getAttribute("data-i");const v=t(k);if(v&&v!==k)el.innerHTML=v;});
+  document.querySelectorAll("[data-i-ph]").forEach(el=>{const k=el.getAttribute("data-i-ph");el.placeholder=t(k);});
+  document.querySelectorAll(".lang-opt[data-lang]").forEach(el=>el.classList.toggle("active",el.dataset.lang===LANG));
+  const lbl=document.getElementById("curLangLbl");if(lbl)lbl.textContent={tk:"🇹🇲 Türkmençe",tr:"🇹🇷 Türkçe",en:"🇬🇧 English",ru:"🇷🇺 Русский"}[LANG];
+  const tbLang=document.getElementById("tbLang");if(tbLang)tbLang.textContent=LANG_NAMES[LANG];
+  if(CU)renderAll();
+}
+
+/* ══ SCREEN ROUTER ══ */
+function showScr(id,dir="r"){
+  document.querySelectorAll(".scr").forEach(s=>{s.classList.remove("active","sr","su");});
+  const el=document.getElementById(id);
+  el.classList.add(dir==="u"?"su":"sr");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add("active")));
+  el.scrollTop=0;
+}
+
+/* ══ TOAST ══ */
+let toastT=null;
+function toast(msg,err){
+  const el=document.getElementById("toast");
+  document.getElementById("toastTxt").textContent=msg;
+  el.classList.toggle("err",!!err);
+  el.classList.remove("show");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add("show")));
+  clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("show"),2800);
+}
+
+/* ══ CONFETTI ══ */
+function confetti(x,y){
+  const cols=["#f0c040","#2563eb","#00c9a7","#7c3aed","#30d158","#ff453a"];
+  for(let i=0;i<20;i++){
+    const el=document.createElement("div");el.className="confetti-piece";
+    el.style.cssText=`left:${x+(-40+Math.random()*80)}px;top:${y}px;width:${6+Math.random()*6}px;height:${8+Math.random()*8}px;background:${cols[i%cols.length]};animation-duration:${1+Math.random()*.7}s;animation-delay:${Math.random()*.2}s;`;
+    document.body.appendChild(el);setTimeout(()=>el.remove(),2000);
+  }
+}
+
+/* ══ CODE INPUTS ══ */
+function wireCode(wrapId){
+  const ins=[...document.getElementById(wrapId).querySelectorAll("input")];
+  ins.forEach((inp,i)=>{
+    inp.addEventListener("input",e=>{const v=e.target.value.replace(/\D/g,"").slice(0,1);e.target.value=v;if(v){inp.classList.add("filled");if(i<ins.length-1)ins[i+1].focus();}else inp.classList.remove("filled");});
+    inp.addEventListener("keydown",e=>{if(e.key==="Backspace"&&!inp.value&&i>0)ins[i-1].focus();});
+    inp.addEventListener("paste",e=>{e.preventDefault();const d=(e.clipboardData||window.clipboardData).getData("text").replace(/\D/g,"");ins.forEach((x,j)=>{x.value=d[j]||"";x.classList.toggle("filled",!!d[j]);});ins[Math.min(d.length,5)].focus();});
+  });
+}
+function getCode(id){return[...document.getElementById(id).querySelectorAll("input")].map(i=>i.value).join("");}
+function clearCode(id){document.getElementById(id).querySelectorAll("input").forEach(i=>{i.value="";i.classList.remove("filled");});try{document.getElementById(id).querySelector("input").focus();}catch{}}
+wireCode("codeWrap");wireCode("adminCodeWrap");
+
+/* ══ RESEND TIMER ══ */
+let resendIv=null;
+function startResendTimer(){
+  const te=document.getElementById("rTimer"),be=document.getElementById("rSendBtn");
+  te.style.display="inline";be.style.display="none";let s=600;te.textContent=fm2(s);
+  clearInterval(resendIv);resendIv=setInterval(()=>{s--;te.textContent=fm2(s);if(s<=0){clearInterval(resendIv);te.style.display="none";be.style.display="inline";}},1000);
+}
+function fm2(s){return Math.floor(s/60)+":"+(s%60<10?"0":"")+s%60;}
+const fmt=n=>Number(n||0).toFixed(2);
+const fmtD=n=>Number(n||0).toFixed(6);
+
+/* ══ AUTH REGISTER ══ */
+document.getElementById("goReg").onclick=()=>showScr("regScr");
+document.getElementById("goLogin").onclick=()=>showScr("loginScr");
+document.getElementById("rBtn").onclick=async()=>{
+  const email=document.getElementById("rEmail").value.trim().toLowerCase();
+  const p=document.getElementById("rPass").value,p2=document.getElementById("rPass2").value;
+  const err=document.getElementById("rErr");err.style.display="none";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent=t("errEmail");err.style.display="block";return;}
+  if(p.length<6){err.textContent=t("errPassShort");err.style.display="block";return;}
+  if(p!==p2){err.textContent=t("errPassMatch");err.style.display="block";return;}
+  const users=getUsers();if(users[email]){err.textContent=t("errEmailExists");err.style.display="block";return;}
+  const btn=document.getElementById("rBtn");btn.disabled=true;btn.textContent=t("sending");
+  try{await sendOtp(email,"reg");pendOtp.pwHash=hp(p);ls.s(K.OTP,pendOtp);document.getElementById("verEmail").textContent=email;showScr("verScr");clearCode("codeWrap");startResendTimer();toast(t("codeSent"));}
+  catch(e){err.textContent="EmailJS: "+e;err.style.display="block";}
+  finally{btn.disabled=false;btn.textContent=t("sendCode");}
+};
+document.getElementById("rSendBtn").addEventListener("click",async()=>{
+  const o=pendOtp||ls.g(K.OTP,null);if(!o)return;
+  document.getElementById("rSendBtn").style.display="none";
+  try{await sendOtp(o.email,"reg");if(o.pwHash){pendOtp.pwHash=o.pwHash;ls.s(K.OTP,pendOtp);}startResendTimer();toast(t("codeSent"));}catch{toast("Error",true);}
+});
+document.getElementById("vBtn").onclick=()=>{
+  const code=getCode("codeWrap"),err=document.getElementById("vErr");err.style.display="none";
+  if(code.length<6){err.textContent=t("errCode");err.style.display="block";return;}
+  const o=pendOtp||ls.g(K.OTP,null);if(!verOtp(code,"reg")){err.textContent=t("errCode");err.style.display="block";return;}
+  const users=getUsers(),email=o.email;
+  users[email]=newUser(email);users[email].passHash=o.pwHash;
+  saveUsers(users);pendOtp=null;ls.d(K.OTP);clearInterval(resendIv);
+  saveSes(email);CU=email;showScr("appScr","u");applyI18n();checkRef();
+};
+
+/* ══ AUTH LOGIN ══ */
+document.getElementById("lBtn").onclick=async()=>{
+  const email=document.getElementById("lEmail").value.trim().toLowerCase();
+  const p=document.getElementById("lPass").value;
+  const err=document.getElementById("lErr");err.style.display="none";
+  const storedPw=ls.g(K.PASS,"dayanch2010");
+  if(email===ADMIN_EMAIL){
+    if(p!==storedPw){err.textContent=t("errWrongPass");err.style.display="block";return;}
+    const btn=document.getElementById("lBtn");btn.disabled=true;btn.textContent=t("sending");
+    try{await sendOtp(ADMIN_EMAIL,"admin");showScr("a2faScr");clearCode("adminCodeWrap");toast(t("codeSent"));}
+    catch(e){err.textContent="EmailJS: "+e;err.style.display="block";}
+    finally{btn.disabled=false;btn.textContent=t("loginBtn");}
+    return;
+  }
+  const users=getUsers();
+  if(!users[email]||users[email].passHash!==hp(p)){err.textContent=t("errWrongPass");err.style.display="block";return;}
+  saveSes(email);CU=email;showScr("appScr","u");applyI18n();checkRef();
+};
+["lEmail","lPass"].forEach(id=>document.getElementById(id).addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("lBtn").click();}));
+
+/* ══ ADMIN 2FA ══ */
+document.getElementById("a2fBtn").onclick=()=>{
+  const code=getCode("adminCodeWrap"),err=document.getElementById("a2fErr");err.style.display="none";
+  if(!verOtp(code,"admin")){err.textContent=t("errCode");err.style.display="block";return;}
+  adminOtp=null;
+  const users=getUsers();
+  if(!users[ADMIN_EMAIL]){users[ADMIN_EMAIL]=newUser(ADMIN_EMAIL);users[ADMIN_EMAIL].passHash=hp(ls.g(K.PASS,"dayanch2010"));saveUsers(users);}
+  saveSes(ADMIN_EMAIL);CU=ADMIN_EMAIL;showScr("appScr","u");applyI18n();
+  setTimeout(()=>{showScr("adminScr");setNbActive(4);openAdmin();},300);
+};
+document.getElementById("a2fBack").onclick=()=>showScr("loginScr");
+
+/* ══ USER STATE ══ */
+function getUS(){if(!CU)return null;const u=getUsers();return u[CU]||null;}
+function saveUS(s){if(!CU)return;const u=getUsers();u[CU]=s;saveUsers(u);}
+function rollDaily(s){
+  const today=new Date().toDateString();
+  if(s.todayDate!==today){
+    const last=s.lastActiveDate?new Date(s.lastActiveDate):null;
+    const y=new Date();y.setDate(y.getDate()-1);
+    if(last&&last.toDateString()===y.toDateString()&&s.todayCount>0)s.streak=(s.streak||0)+1;
+    else if(s.todayCount===0)s.streak=0;
+    s.todayDate=today;s.todayCount=0;s.todayEarnings=0;s.checkedInToday=false;
+  }
+  if(s.mDate!==today){s.mDate=today;s.mP={m1:0,m2:0,m3:0};}
+  return s;
+}
+
+/* ══ RENDER ══ */
+function renderAll(){
+  if(!CU)return;let s=getUS();if(!s)return;s=rollDaily(s);saveUS(s);
+  const bal=s.balance||0;
+  document.getElementById("heroNum").textContent=Math.floor(bal);
+  document.getElementById("heroCents").textContent=fmtD(bal).split(".")[1]||"000000";
+  document.getElementById("subPow").textContent=s.pow||0;
+  document.getElementById("subStars").textContent=s.stars||0;
+  document.getElementById("tbStars").textContent=s.stars||0;
+  document.getElementById("tbPow").textContent=s.pow||0;
+  document.getElementById("tbTmt").textContent=(s.balance||0).toFixed(3);
+  document.getElementById("tbLang").textContent=LANG_NAMES[LANG];
+  const av=(s.name?s.name[0]:CU[0]).toUpperCase();
+  const avBtn=document.getElementById("avBtn");avBtn.textContent=av;avBtn.className="av-btn "+(s.avColor||"av-blue");
+  document.getElementById("nb4").style.display=CU===ADMIN_EMAIL?"flex":"none";
+  document.getElementById("nb4ProfRow").style.display=CU===ADMIN_EMAIL?"flex":"none";
+  document.getElementById("adsAvail").textContent=Math.max(0,CFG.dailyLimit-s.todayCount);
+  document.getElementById("adsTodayCount").textContent=s.todayCount||0;
+  document.getElementById("adsTodayMax").textContent=CFG.dailyLimit;
+  const wb=document.getElementById("watchBtn");const ws=document.getElementById("watchBtn").querySelector("span");
+  const now=Date.now(),rem=Math.ceil((s.lastAdAt+CFG.cooldown*1000-now)/1000);
+  if(s.todayCount>=CFG.dailyLimit){wb.disabled=true;ws.textContent=t("toastLimit");}
+  else if(rem>0){wb.disabled=true;ws.textContent=t("toastCd")+" ("+rem+"s)";}
+  else{wb.disabled=false;ws.textContent=t("startEarning");}
+  document.getElementById("incToday").textContent="$"+(s.todayEarnings||0).toFixed(3);
+  document.getElementById("incWeekly").textContent="$"+(s.weeklyEarnings||0).toFixed(3);
+  document.getElementById("incMonthly").textContent="$"+(s.monthlyEarnings||0).toFixed(3);
+  document.getElementById("incAllTime").textContent="$"+(s.allTimeEarnings||0).toFixed(3);
+}
+
+/* ══ CONTEST ══ */
+let contestTab="this";
+document.getElementById("thisWeekTab").onclick=()=>{contestTab="this";document.getElementById("thisWeekTab").classList.add("active");document.getElementById("lastWeekTab").classList.remove("active");renderContest();};
+document.getElementById("lastWeekTab").onclick=()=>{contestTab="last";document.getElementById("lastWeekTab").classList.add("active");document.getElementById("thisWeekTab").classList.remove("active");renderContest();};
+document.getElementById("contestBanner").onclick=()=>{showScr("contestScr");setNbActive(1);renderContest();};
+
+function renderContest(){
+  const users=getUsers();
+  const sorted=Object.values(users).sort((a,b)=>(b.stars||0)-(a.stars||0));
+  const body=document.getElementById("contestBody");
+  const isLast=contestTab==="last";
+  let html=`<div class="prize-card"><div><div class="prize-lbl">${isLast?t("lastWeek")+" PRIZE":""} PRIZE POOL</div><div class="prize-amount">$10</div></div><div class="prize-right"><div class="top">Top 10 winners</div><div class="bottom">Earn Stars by watching ads</div></div></div>`;
+  if(isLast){
+    html+=`<div style="font-size:11.5px;color:var(--txt2);margin-bottom:12px;">🏁 ${t("prevWinners")}</div>`;
+  }
+  const top3=sorted.slice(0,3).filter(u=>u.stars>0);
+  if(top3.length>=3){
+    const order=[top3[1],top3[0],top3[2]];
+    const sizes=["second","first","third"];
+    const crowns=["","👑",""];
+    const bases=["b2","b1","b3"];
+    const baseH=["50","70","40"];
+    html+=`<div class="podium-wrap">`;
+    [0,1,2].forEach(i=>{
+      if(!order[i])return;
+      const u=order[i];const init=(u.name?u.name[0]:u.email[0]).toUpperCase();
+      const rank=i===1?1:i===0?2:3;
+      html+=`<div class="podium-item">
+        <div class="pod-av ${sizes[i]} ${u.avColor||"av-blue"}">${crowns[i]?`<span class="pod-crown">${crowns[i]}</span>`:""}${init}</div>
+        <div class="pod-name">${esc(u.name||u.email.split("@")[0])}</div>
+        <div class="pod-earn">$${(u.allTimeEarnings||0).toFixed(2)}</div>
+        <div class="pod-stars">⭐ ${u.stars||0}</div>
+        <div class="pod-base ${bases[i]}" style="height:${baseH[i]}px;">${rank}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  } else {
+    html+=`<div style="text-align:center;padding:40px 20px;"><div style="font-size:48px;opacity:.3;">⭐</div><div style="font-size:15px;font-weight:700;margin-top:10px;">${t("noParticipants")}</div><div style="font-size:12px;color:var(--txt2);margin-top:6px;">${t("noParticipantsSub")}</div></div>`;
+  }
+  if(sorted.length>3){
+    html+=`<div style="font-size:11px;font-weight:800;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 10px;">TOP ${Math.min(sorted.length,10)}</div><div class="winners-list">`;
+    sorted.slice(0,10).forEach((u,i)=>{
+      const init=(u.name?u.name[0]:u.email[0]).toUpperCase();
+      const rankIc=i===0?"🥇":i===1?"🥈":i===2?"🥉":"#"+(i+1);
+      const isMe=u.email===CU;
+      html+=`<div class="winner-item${isMe?" me":""}">
+        <div class="winner-rank">${rankIc}</div>
+        <div class="winner-av ${u.avColor||"av-blue"}">${init}</div>
+        <div class="winner-info"><div class="n">${esc(u.name||u.email.split("@")[0])}${isMe?" ✦":""}</div><div class="s">⭐ ${u.stars||0} stars</div></div>
+        <div class="winner-earn">$${(u.allTimeEarnings||0).toFixed(2)}</div>
+      </div>`;
+    });
+    html+="</div>";
+  }
+  const myState=getUS();const myRank=sorted.findIndex(u=>u.email===CU)+1;
+  if(myRank>10||!myState?.stars){
+    html+=`<div class="not-ranked"><b>${t("notRanked")}</b>${t("notRankedSub")}</div>`;
+  }
+  body.innerHTML=html;
+}
+
+/* ══ AFFILIATES ══ */
+function renderAff(){
+  const s=getUS();if(!s)return;
+  document.getElementById("affDesc").innerHTML=t("affDesc");
+  document.getElementById("affLvl1").textContent=s.referrals||0;
+  document.getElementById("affLvl2").textContent=0;
+  document.getElementById("affBonus").textContent="$"+fmt(CFG.inviteBonus);
+  document.getElementById("affUsd").textContent="$"+(s.referralEarnings||0).toFixed(3);
+  document.getElementById("affPow").textContent=(s.pow||0)+" POW";
+}
+
+/* ══ TASKS ══ */
+let taskFilter="all";
+function renderTasks(){
+  const s=getUS();if(!s)return;
+  const today=new Date().toDateString();
+  const checkedIn=s.checkedInToday&&s.checkinDate===today;
+  document.getElementById("earnTaskList").innerHTML=`
+    <div class="task-item">
+      <div class="task-ic" style="background:rgba(99,102,241,.2);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M9 9l6 3-6 3V9z" fill="#818cf8" stroke="none"/></svg>
+      </div>
+      <div class="task-body-inner"><div class="t">AdsGram</div><div class="s">+${CFG.rewardPerAd} TMT · ${s.todayCount||0}/${CFG.dailyLimit} /day</div></div>
+      <button class="task-btn watch" id="earnWatchBtn" ${s.todayCount>=CFG.dailyLimit?"disabled":""}>WATCH</button>
+    </div>`;
+  document.getElementById("earnWatchBtn").onclick=watchAd;
+  document.getElementById("dailyTaskList").innerHTML=`
+    <div class="task-item">
+      <div class="task-ic" style="background:rgba(59,130,246,.15);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <div class="task-body-inner"><div class="t" data-i="dailyCheckin">Just check in</div><div class="s">+${fmt(CFG.rewardPerAd*2)} TMT</div></div>
+      <button class="task-btn ${checkedIn?"done":"claim"}" id="checkinBtn" ${checkedIn?"disabled":""} data-i="${checkedIn?"claimed":"claimBtn"}">${checkedIn?"✓":"Claim"}</button>
+    </div>
+    <div class="task-item">
+      <div class="task-ic" style="background:rgba(0,201,167,.15);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      </div>
+      <div class="task-body-inner"><div class="t" data-i="shareTask">Share with friends</div><div class="s">+${fmt(CFG.inviteBonus)} TMT</div></div>
+      <button class="task-btn share" id="shareTaskBtn" data-i="shareBtn">Share</button>
+    </div>`;
+  applyI18n();
+  document.getElementById("checkinBtn").onclick=()=>{
+    let s=getUS();if(!s||s.checkedInToday&&s.checkinDate===today)return;
+    s=rollDaily(s);s.checkedInToday=true;s.checkinDate=today;
+    s.balance+=(CFG.rewardPerAd*2);s.pow=(s.pow||0)+1000;
+    s.todayEarnings=(s.todayEarnings||0)+(CFG.rewardPerAd*2);
+    s.allTimeEarnings=(s.allTimeEarnings||0)+(CFG.rewardPerAd*2);
+    s.history=s.history||[];s.history.unshift({type:"earn",amount:CFG.rewardPerAd*2,date:Date.now()});
+    saveUS(s);renderAll();renderTasks();toast(t("toastCheckin",{n:fmt(CFG.rewardPerAd*2)}));
+  };
+  document.getElementById("shareTaskBtn").onclick=openShare;
+}
+
+/* ══ WATCH AD ══ */
+let adRunning=false;
+document.getElementById("watchBtn").onclick=watchAd;
+function watchAd(){
+  if(adRunning)return;
+  let s=getUS();if(!s)return;s=rollDaily(s);
+  if(s.todayCount>=CFG.dailyLimit){toast(t("toastLimit"),true);return;}
+  if(Date.now()-s.lastAdAt<CFG.cooldown*1000){toast(t("toastCd"),true);return;}
+  adRunning=true;
+  if(window.AdBridge?.showRewarded){
+    window._adRewardCb=()=>{adRunning=false;grantRew();window._adRewardCb=null;window._adErrorCb=null;};
+    window._adErrorCb=(m)=>{adRunning=false;toast(m||"Ad error",true);renderAll();window._adRewardCb=null;window._adErrorCb=null;};
+    window.AdBridge.showRewarded();return;
+  }
+  playAd();
+}
+function playAd(){
+  const ov=document.getElementById("adOv"),skip=document.getElementById("adSkip"),fill=document.getElementById("adFill"),stat=document.getElementById("adStat");
+  stat.textContent=t("adWatch");ov.style.display="flex";
+  let total=Math.max(3,CFG.adDuration),rem=total;skip.textContent=rem;fill.style.width="0%";fill.style.transition="none";
+  requestAnimationFrame(()=>{fill.style.transition="width 1s linear";});
+  const iv=setInterval(()=>{rem--;skip.textContent=Math.max(rem,0);fill.style.width=Math.min(100,Math.round(((total-rem)/total)*100))+"%";
+    if(rem<=0){clearInterval(iv);stat.textContent=t("adDone");setTimeout(()=>{ov.style.display="none";adRunning=false;grantRew();},400);}
+  },1000);
+}
+function grantRew(){
+  let s=getUS();if(!s)return;s=rollDaily(s);
+  const rew=CFG.rewardPerAd;
+  s.balance+=rew;s.totalAds=(s.totalAds||0)+1;s.todayCount+=1;s.lastAdAt=Date.now();s.lastActiveDate=new Date().toDateString();
+  s.stars=(s.stars||0)+1;s.pow=(s.pow||0)+500;
+  s.todayEarnings=(s.todayEarnings||0)+rew;s.weeklyEarnings=(s.weeklyEarnings||0)+rew;s.monthlyEarnings=(s.monthlyEarnings||0)+rew;s.allTimeEarnings=(s.allTimeEarnings||0)+rew;
+  s.mP=s.mP||{};s.mP.m1=Math.min((s.mP.m1||0)+1,5);
+  s.history=s.history||[];s.history.unshift({type:"earn",amount:rew,date:Date.now()});s.history=s.history.slice(0,200);
+  saveUS(s);
+  const btn=document.getElementById("watchBtn");const r=btn.getBoundingClientRect();confetti(r.left+r.width/2,r.top+r.height/2);
+  renderAll();renderTasks();toast(t("toastEarn",{n:fmt(rew)}));
+}
+
+/* ══ WITHDRAW ══ */
+// wdBtn handled below
+document.getElementById("wdX").onclick=()=>closeOv("wdOv");
+document.getElementById("wdOv").onclick=e=>{if(e.target.id==="wdOv")closeOv("wdOv");};
+document.getElementById("wCard").oninput=e=>{let v=e.target.value.replace(/\D/g,"").slice(0,16);e.target.value=v.replace(/(.{4})/g,"$1 ").trim();};
+// wdSub handled below
+
+/* ══ SWAP BTN (placeholder) ══ */
+document.getElementById("swapBtn").onclick=()=>toast("Coming soon 🔄");
+
+/* ══ LANG ══ */
+document.getElementById("langBtn").onclick=()=>openOv("langOv");
+document.getElementById("langX").onclick=()=>closeOv("langOv");
+document.getElementById("langOv").onclick=e=>{if(e.target.id==="langOv")closeOv("langOv");};
+document.querySelectorAll(".lang-opt[data-lang]").forEach(el=>{
+  el.onclick=()=>{LANG=el.dataset.lang;localStorage.setItem("tp_lang",LANG);closeOv("langOv");applyI18n();};
+});
+
+/* ══ PROFILE ══ */
+function renderProf(){
+  const s=getUS();if(!s)return;
+  const init=(s.name?s.name[0]:CU[0]).toUpperCase();
+  const profAv=document.getElementById("profAv");profAv.textContent=init;profAv.className="prof-av "+(s.avColor||"av-blue");
+  document.getElementById("profName").textContent=s.name||CU.split("@")[0];
+  document.getElementById("profEmail").textContent=CU;
+  document.getElementById("psBal").textContent="$"+fmt(s.balance);
+  document.getElementById("psAds").textContent=s.totalAds||0;
+  document.getElementById("psStr").textContent=s.streak||0;
+  document.getElementById("editNameSub").textContent=s.name||"—";
+  document.getElementById("curLangLbl").textContent={tk:"🇹🇲 Türkmençe",tr:"🇹🇷 Türkçe",en:"🇬🇧 English",ru:"🇷🇺 Русский"}[LANG];
+  document.getElementById("nb4ProfRow").style.display=CU===ADMIN_EMAIL?"flex":"none";
+}
+document.getElementById("avBtn").onclick=()=>{renderProf();showScr("profScr");setNbActive(99);};
+document.getElementById("logoutBtn").onclick=()=>{clearSes();showScr("loginScr","u");};
+document.getElementById("editNameRow").onclick=()=>{const s=getUS();document.getElementById("nameInp").value=s?.name||"";openOv("nameOv");};
+document.getElementById("nameX").onclick=()=>closeOv("nameOv");
+document.getElementById("nameOv").onclick=e=>{if(e.target.id==="nameOv")closeOv("nameOv");};
+document.getElementById("nameSave").onclick=()=>{const n=document.getElementById("nameInp").value.trim();let s=getUS();if(!s)return;s.name=n;saveUS(s);closeOv("nameOv");renderProf();renderAll();toast(t("toastSaved"));};
+document.getElementById("langPrefRow").onclick=()=>openOv("langOv");
+document.getElementById("nb4ProfRow").onclick=()=>{showScr("adminScr");setNbActive(4);openAdmin();};
+
+/* ══ AFFILIATES ══ */
+function openShare(){
+  const link=location.href.split("?")[0]+"?ref="+encodeURIComponent(CU);
+  if(navigator.share)navigator.share({title:"CoinView",url:link});
+  else navigator.clipboard?.writeText(link).then(()=>toast(t("toastCopy")));
+}
+document.getElementById("affCopy").onclick=()=>{
+  const link=location.href.split("?")[0]+"?ref="+encodeURIComponent(CU);
+  navigator.clipboard?.writeText(link).then(()=>toast(t("toastCopy")));
+};
+document.getElementById("affShare").onclick=openShare;
+function checkRef(){
+  const p=new URLSearchParams(location.search),ref=p.get("ref");
+  if(!ref||!CU||ref===CU)return;
+  let s=getUS();if(!s||s.referralPaid)return;
+  const users=getUsers(),ru=users[ref];if(!ru)return;
+  ru.balance=(ru.balance||0)+CFG.inviteBonus;ru.referralEarnings=(ru.referralEarnings||0)+CFG.inviteBonus;ru.referrals=(ru.referrals||0)+1;ru.pow=(ru.pow||0)+500;
+  ru.history=ru.history||[];ru.history.unshift({type:"invite",amount:CFG.inviteBonus,date:Date.now()});
+  users[ref]=ru;s.referralPaid=true;s.referredBy=ref;users[CU]=s;saveUsers(users);
+}
+
+/* ══ PROMO ══ */
+document.getElementById("promoApply").onclick=()=>{
+  const code=document.getElementById("promoInput").value.trim().toUpperCase();
+  if(!code){return;}
+  // Admin panelden genişletilebilir promo sistemi
+  const promoCodes=ls.g("tp_promos",{});
+  if(promoCodes[code]){
+    let s=getUS();if(!s)return;
+    if(s.usedPromos&&s.usedPromos.includes(code)){toast("Promo kod zaten kullanıldı",true);return;}
+    s.balance+=(promoCodes[code]||0.5);s.usedPromos=s.usedPromos||[];s.usedPromos.push(code);saveUS(s);renderAll();toast("+"+fmt(promoCodes[code])+" TMT promo bonus!");document.getElementById("promoInput").value="";
+  } else toast(t("toastPromo"),true);
+};
+
+/* ══ ADMIN ══ */
+function openAdmin(){
+  CFG=ls.g(K.CFG,DFLT_CFG);
+  document.getElementById("cfgRew").value=CFG.rewardPerAd;document.getElementById("cfgLim").value=CFG.dailyLimit;document.getElementById("cfgDur").value=CFG.adDuration;document.getElementById("cfgCd").value=CFG.cooldown;document.getElementById("cfgMin").value=CFG.minWithdraw;document.getElementById("cfgInv").value=CFG.inviteBonus;
+  document.getElementById("cfgNP").value="";document.getElementById("cfgNP2").value="";document.getElementById("admPErr").style.display="none";
+  renderAdminReqs();renderAdminUsers();
+}
+document.getElementById("admSave").onclick=()=>{
+  const np=document.getElementById("cfgNP").value,np2=document.getElementById("cfgNP2").value;
+  const err=document.getElementById("admPErr");err.style.display="none";
+  if(np){if(np.length<6){err.textContent=t("errPassShort");err.style.display="block";return;}if(np!==np2){err.textContent=t("errPassMatch");err.style.display="block";return;}ls.s(K.PASS,np);const u=getUsers();if(u[ADMIN_EMAIL])u[ADMIN_EMAIL].passHash=hp(np);saveUsers(u);}
+  CFG.rewardPerAd=parseFloat(document.getElementById("cfgRew").value)||DFLT_CFG.rewardPerAd;CFG.dailyLimit=parseInt(document.getElementById("cfgLim").value)||DFLT_CFG.dailyLimit;CFG.adDuration=parseInt(document.getElementById("cfgDur").value)||DFLT_CFG.adDuration;CFG.cooldown=parseInt(document.getElementById("cfgCd").value)||0;CFG.minWithdraw=parseFloat(document.getElementById("cfgMin").value)||DFLT_CFG.minWithdraw;CFG.inviteBonus=parseFloat(document.getElementById("cfgInv").value)||DFLT_CFG.inviteBonus;
+  saveCFG();renderAll();toast(t("toastSaved"));
+};
+document.getElementById("expReq").onclick=()=>{const users=getUsers(),all=[];Object.values(users).forEach(u=>(u.withdrawReqs||[]).forEach(r=>all.push({...r,userEmail:u.email})));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:"application/json"}));a.download="coinview_requests.json";a.click();};
+document.getElementById("resetBtn").onclick=()=>{if(!confirm("Ähli maglumat öçürilsin?"))return;[K.USERS,K.CFG,K.SES,K.OTP].forEach(k=>ls.d(k));clearSes();CFG=Object.assign({},DFLT_CFG);showScr("loginScr","u");toast("Arassalandy");};
+function renderAdminReqs(){const users=getUsers(),all=[];Object.values(users).forEach(u=>(u.withdrawReqs||[]).forEach(r=>all.push({...r,ue:u.email})));all.sort((a,b)=>b.date-a.date);document.getElementById("admReqList").innerHTML=all.length?all.map(r=>`<div style="background:var(--card);border:1px solid var(--ce);border-radius:var(--r3);padding:10px 12px;font-size:12px;"><b>${esc(r.name)}</b> <span style="background:rgba(240,192,64,.15);color:var(--gold2);font-size:10px;font-weight:800;padding:2px 8px;border-radius:100px;">${fmt(r.amount)} TMT</span><div style="color:var(--txt2);margin-top:3px;">${esc(r.ue)}<br>${esc(r.phone)} · ${esc(r.card)}<br>${new Date(r.date).toLocaleString()}</div></div>`).join(""):`<div style="text-align:center;color:var(--txt2);padding:16px;">Talap ýok</div>`;}
+function renderAdminUsers(){const users=getUsers();const sorted=Object.values(users).sort((a,b)=>(b.balance||0)-(a.balance||0));document.getElementById("admUsrList").innerHTML=sorted.length?sorted.map(u=>`<div style="background:var(--card);border:1px solid var(--ce);border-radius:var(--r3);padding:10px 12px;font-size:12px;"><b>${esc(u.email)}</b> <span style="background:rgba(240,192,64,.15);color:var(--gold2);font-size:10px;font-weight:800;padding:2px 8px;border-radius:100px;">${fmt(u.balance)} TMT</span><div style="color:var(--txt2);margin-top:3px;">${u.totalAds||0} reklam · ${u.streak||0} gün seri · ⭐ ${u.stars||0}</div></div>`).join(""):`<div style="text-align:center;color:var(--txt2);padding:16px;">Ulanyjy ýok</div>`;}
+
+/* ══ OVS ══ */
+function openOv(id){document.getElementById(id).classList.add("show");}
+function closeOv(id){document.getElementById(id).classList.remove("show");}
+
+/* ══ NAV ══ */
+function setNbActive(i){document.querySelectorAll(".nb").forEach((b,j)=>b.classList.toggle("active",j===i));}
+document.getElementById("nb0").onclick=()=>{showScr("appScr","u");setNbActive(0);};
+document.getElementById("nb1").onclick=()=>{showScr("contestScr");setNbActive(1);renderContest();};
+document.getElementById("nb2").onclick=()=>{showScr("affScr");setNbActive(2);renderAff();};
+document.getElementById("nb3").onclick=()=>{showScr("tasksScr");setNbActive(3);renderTasks();};
+document.getElementById("nb4").onclick=()=>{showScr("adminScr");setNbActive(4);openAdmin();};
+
+/* ══ UTILS ══ */
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ══ AppCreator24 köprüsü ══ */
+window.rewardedVideoCompleted=function(){onAppCreatorReward();};
+window.onRewardedVideoCompleted=function(){onAppCreatorReward();};
+window.admobRewardGranted=function(){onAppCreatorReward();};
+function onAppCreatorReward(){
+  if(!CU)return;const todayKey="tp_openbonus_"+new Date().toDateString();
+  if(localStorage.getItem(todayKey))return;localStorage.setItem(todayKey,"1");grantRew();
+}
+
+/* ══ TICK ══ */
+setInterval(()=>{if(CU)renderAll();},1000);
+
+/* ══ NETWORK SEÇİMİ ══ */
+let selectedNetwork = "TRC20";
+document.querySelectorAll(".net-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".net-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedNetwork = btn.dataset.net;
+    const hints = {
+      TRC20: "TRON network — starts with T",
+      ERC20: "Ethereum network — starts with 0x",
+      USD: "Bank transfer / other USD method"
+    };
+    document.getElementById("wWalletHint").textContent = hints[selectedNetwork] || "";
+    document.getElementById("wWallet").placeholder = selectedNetwork === "TRC20" ? "TRC20: T..." : selectedNetwork === "ERC20" ? "ERC20: 0x..." : "Bank / PayPal / other";
+  };
+});
+
+/* ══ WITHDRAW GÜNCELLEME ══ */
+// Eski wdSub handler'ı override et
+document.getElementById("wdBtn").onclick = () => {
+  const s = getUS(); if (!s) return;
+  document.getElementById("wdBal").textContent = "$" + fmtD(s.balance);
+  document.getElementById("wHint").textContent = t("minHint", {n: fmt(CFG.minWithdraw)});
+  document.getElementById("wEmail2").value = CU; // email otomatik doldur
+  openOv("wdOv");
+};
+
+document.getElementById("wdSub").onclick = () => {
+  const wallet = document.getElementById("wWallet").value.trim();
+  const name   = document.getElementById("wName").value.trim();
+  const email2 = document.getElementById("wEmail2").value.trim();
+  const amt    = parseFloat(document.getElementById("wAmt").value);
+  if (!wallet || !name || !email2 || !amt || amt <= 0) { toast(t("toastWdErr"), true); return; }
+  if (amt < CFG.minWithdraw) { toast(t("toastMinW", {n: fmt(CFG.minWithdraw)}), true); return; }
+  let s = getUS(); if (!s) return;
+  if (amt > s.balance) { toast(t("toastInsuff"), true); return; }
+  s.balance -= amt;
+  s.history = s.history || [];
+  s.history.unshift({type:"withdraw", amount:amt, date:Date.now()});
+  s.withdrawReqs = s.withdrawReqs || [];
+  s.withdrawReqs.unshift({
+    id: "wr" + Date.now(),
+    name, email: email2,
+    network: selectedNetwork,
+    wallet, amount: amt,
+    status: "pending",
+    date: Date.now()
+  });
+  s.history = s.history.slice(0, 200);
+  saveUS(s); renderAll(); closeOv("wdOv");
+  toast(t("toastWdOk"));
+};
+
+/* ══ ADMIN REQUEST RENDER (GELİŞMİŞ) ══ */
+function renderAdminReqs() {
+  const users = getUsers(), all = [];
+  Object.values(users).forEach(u => (u.withdrawReqs || []).forEach(r => all.push({...r, userEmail: u.email})));
+  all.sort((a, b) => b.date - a.date);
+  const wrap = document.getElementById("admReqList");
+  if (!all.length) { wrap.innerHTML = '<div style="text-align:center;color:var(--txt2);padding:16px;">No requests yet</div>'; return; }
+  wrap.innerHTML = all.map((r, idx) => {
+    const statusBadge = r.status === "paid"
+      ? '<span class="req-badge paid">✓ Paid</span>'
+      : r.status === "rejected"
+        ? '<span class="req-badge unpaid">✗ Rejected</span>'
+        : '<span class="req-badge" style="background:rgba(255,214,10,.1);color:var(--warn);">⏳ Pending</span>';
+    return `<div class="req-card" id="reqCard_${r.id}">
+      <div class="req-card-head">
+        <span class="req-card-name">${esc(r.name)} ${statusBadge}</span>
+        <span class="req-card-amt">$${fmt(r.amount)}</span>
+      </div>
+      <div class="req-card-meta">
+        <b>Network:</b> ${esc(r.network || "—")}<br>
+        <b>Wallet:</b> ${esc(r.wallet || "—")}<br>
+        <b>Email:</b> ${esc(r.email || r.userEmail)}<br>
+        <b>Date:</b> ${new Date(r.date).toLocaleString()}
+      </div>
+      ${r.status === "pending" ? `<div class="req-btns">
+        <button class="req-btn paid" onclick="markReq('${r.id}','${r.userEmail}','paid')">✓ Ödendi</button>
+        <button class="req-btn unpaid" onclick="openReason('${r.id}','${r.userEmail}','${esc(r.email||r.userEmail)}')">✗ Ödenmedi</button>
+      </div>` : r.status === "rejected" && r.reason ? `<div style="font-size:11.5px;color:var(--bad);background:rgba(255,69,58,.08);border-radius:var(--r3);padding:8px 10px;margin-top:4px;">Reason: ${esc(r.reason)}</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+/* ══ MARK REQUEST ══ */
+function markReq(reqId, userEmail, status) {
+  const users = getUsers();
+  const u = users[userEmail]; if (!u) return;
+  const req = (u.withdrawReqs || []).find(r => r.id === reqId); if (!req) return;
+  req.status = status;
+  saveUsers(users); renderAdminReqs();
+  toast(status === "paid" ? "✓ Ödendi olarak işaretlendi" : "✗ Reddedildi");
+  // Paid ise email bildir
+  if (status === "paid") {
+    emailjs.send(EJS.svc, EJS.tpl, {
+      to_email: req.email || userEmail,
+      passcode: "PAYMENT CONFIRMED",
+      message: "Your withdrawal of $" + fmt(req.amount) + " (" + req.network + ") has been processed. Wallet: " + req.wallet
+    }).catch(()=>{});
+  }
+}
+
+/* ══ REASON MODAL ══ */
+let _pendingRejectId = null, _pendingRejectUser = null, _pendingRejectEmail = null;
+function openReason(reqId, userEmail, userEmail2) {
+  _pendingRejectId = reqId; _pendingRejectUser = userEmail; _pendingRejectEmail = userEmail2;
+  document.getElementById("reasonText").value = "";
+  document.getElementById("reasonModal").classList.add("show");
+  setTimeout(() => document.getElementById("reasonText").focus(), 300);
+}
+document.getElementById("reasonCancel").onclick = () => {
+  document.getElementById("reasonModal").classList.remove("show");
+  _pendingRejectId = null; _pendingRejectUser = null; _pendingRejectEmail = null;
+};
+document.getElementById("reasonSend").onclick = () => {
+  const reason = document.getElementById("reasonText").value.trim();
+  if (!reason) { document.getElementById("reasonText").style.borderColor = "var(--bad)"; return; }
+  document.getElementById("reasonText").style.borderColor = "";
+  const users = getUsers();
+  const u = users[_pendingRejectUser]; if (!u) return;
+  const req = (u.withdrawReqs || []).find(r => r.id === _pendingRejectId); if (!req) return;
+  req.status = "rejected"; req.reason = reason;
+  saveUsers(users);
+  // EmailJS ile kullanıcıya bildir
+  const btn = document.getElementById("reasonSend");
+  btn.disabled = true; btn.textContent = "Sending…";
+  emailjs.send(EJS.svc, EJS.tpl, {
+    to_email: _pendingRejectEmail || req.email || _pendingRejectUser,
+    passcode: "WITHDRAWAL REJECTED",
+    message: "Your withdrawal request of $" + fmt(req.amount) + " was rejected.\n\nReason: " + reason + "\n\nPlease re-submit with correct information."
+  }).then(() => {
+    toast("✗ Reddedildi & Email gönderildi");
+  }).catch(() => {
+    toast("✗ Reddedildi (email gönderilemedi)", true);
+  }).finally(() => {
+    btn.disabled = false; btn.textContent = "Send & Reject";
+    document.getElementById("reasonModal").classList.remove("show");
+    _pendingRejectId = null; _pendingRejectUser = null; _pendingRejectEmail = null;
+    renderAdminReqs();
+  });
+};
+
+/* ══ INIT ══ */
+if(loadSes()){showScr("appScr","u");checkRef();applyI18n();}
+else{showScr("loginScr","u");applyI18n();}
+
+})();
+</script>
+</body>
+</html>
