@@ -802,20 +802,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 (function(){"use strict";
 
 /* ══ EMAILJS ══ */
-const EJS={svc:"service_8jw7kob",tpl:"template_7wngsoa",pk:"82PnuDJ81Zem4UeOq"};
-// EmailJS lazy load - sayfa açılmasını engellemesin
-let ejsReady=false;
-function loadEJS(){
-  return new Promise(resolve=>{
-    if(ejsReady){resolve();return;}
-    if(window.emailjs){ejsReady=true;emailjs.init(EJS.pk);resolve();return;}
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload=()=>{ejsReady=true;emailjs.init(EJS.pk);resolve();};
-    s.onerror=()=>{resolve();}; // hata olsa bile devam et
-    document.head.appendChild(s);
-  });
-}
+// EmailJS devre dışı
 
 /* ══ CONSTANTS ══ */
 const ADMIN_EMAIL="daykajannn@gmail.com";
@@ -845,13 +832,12 @@ function clearSes(){ls.d(K.SES);CU=null;}
 /* ══ OTP ══ */
 let pendOtp=null,adminOtp=null;
 function genCode(){return String(Math.floor(100000+Math.random()*900000));}
-async function sendOtp(email,purpose){
+function sendOtp(email,purpose){
   const code=genCode(),exp=Date.now()+600000;
   if(purpose==="admin")adminOtp={code,exp};
   else{pendOtp={code,exp,email,purpose};ls.s(K.OTP,pendOtp);}
-  await loadEJS();
-  if(!window.emailjs)throw new Error("EmailJS yüklenemedi");
-  return emailjs.send(EJS.svc,EJS.tpl,{to_email:email,passcode:code});
+  alert("✉ Kod: " + code + "\n(EmailJS aktif değil - test modu)");
+  return Promise.resolve();
 }
 function verOtp(input,purpose){
   if(purpose==="admin"){if(!adminOtp||Date.now()>adminOtp.exp)return false;return adminOtp.code===input;}
