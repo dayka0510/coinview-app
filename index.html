@@ -26,13 +26,13 @@
   --nav:60px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
-html{height:100%;}body{min-height:100%;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow:hidden;-webkit-font-smoothing:antialiased;}
+html{height:100%;}body{min-height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
 
 /* SCREENS */
-.scr{position:fixed;inset:0;z-index:10;overflow-y:auto;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s cubic-bezier(.4,0,.2,1);}
+.scr{position:fixed;inset:0;z-index:10;overflow-y:auto;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .3s ease,transform .3s cubic-bezier(.4,0,.2,1);will-change:opacity,transform;}
 .scr.sr{transform:translateX(30px);}
 .scr.su{transform:translateY(20px);}
-.scr.active{opacity:1;pointer-events:auto;transform:none;}
+.scr.active{opacity:1!important;pointer-events:auto!important;transform:none!important;visibility:visible!important;}
 
 /* AUTH */
 .auth-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px calc(40px + var(--sb));background:var(--bg);}
@@ -868,11 +868,21 @@ function applyI18n(){
 
 /* ══ SCREEN ROUTER ══ */
 function showScr(id,dir="r"){
-  document.querySelectorAll(".scr").forEach(s=>{s.classList.remove("active","sr","su");});
+  document.querySelectorAll(".scr").forEach(s=>{
+    s.classList.remove("active","sr","su");
+    s.style.opacity="0";
+    s.style.pointerEvents="none";
+  });
   const el=document.getElementById(id);
   el.classList.add(dir==="u"?"su":"sr");
-  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add("active")));
   el.scrollTop=0;
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      el.classList.add("active");
+      el.style.opacity="1";
+      el.style.pointerEvents="auto";
+    });
+  });
 }
 
 /* ══ TOAST ══ */
@@ -1447,8 +1457,24 @@ document.getElementById("reasonSend").onclick = () => {
 };
 
 /* ══ INIT ══ */
-if(loadSes()){showScr("appScr","u");checkRef();applyI18n();}
-else{showScr("loginScr","u");applyI18n();}
+try {
+  // Sayfa yüklenince ilk ekranı göster
+  document.addEventListener('DOMContentLoaded', function() {
+    if(loadSes()){showScr("appScr","u");checkRef();applyI18n();}
+    else{showScr("loginScr","u");applyI18n();}
+  });
+  // Zaten yüklendiyse direkt çalıştır
+  if(document.readyState === 'complete' || document.readyState === 'interactive'){
+    if(loadSes()){showScr("appScr","u");checkRef();applyI18n();}
+    else{showScr("loginScr","u");applyI18n();}
+  }
+} catch(e) {
+  console.error('Init error:', e);
+  // Fallback - direkt login göster
+  document.querySelectorAll(".scr").forEach(s=>s.classList.remove("active"));
+  const ls = document.getElementById("loginScr");
+  if(ls){ ls.style.cssText="position:fixed;inset:0;z-index:10;overflow-y:auto;display:flex;flex-direction:column;opacity:1;pointer-events:auto;transform:none;background:var(--bg);"; }
+}
 
 })();
 </script>
